@@ -39,14 +39,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   useEffect(() => {
+    // Safety net: never hang on loading longer than 6 seconds
+    const timeout = setTimeout(() => setLoading(false), 6000)
+
     // Check for an existing session on mount
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const profile = await fetchProfile(session.user.id)
-        setUser(profile)
-      }
-      setLoading(false)
-    })
+    supabase.auth.getSession()
+      .then(async ({ data: { session } }) => {
+        clearTimeout(timeout)
+        if (session?.user) {
+          const profile = await fetchProfile(session.user.id)
+          setUser(profile)
+        }
+        setLoading(false)
+      })
+      .catch(() => {
+        clearTimeout(timeout)
+        setLoading(false)
+      })
 
     // Listen for auth state changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -59,7 +68,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(timeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
