@@ -11,6 +11,7 @@ interface SystemContextType {
   refreshSystemHealth: () => void
   refreshCameras: () => Promise<void>
   refreshAuditLog: () => Promise<void>
+  isLoadingCameras: boolean
 }
 
 const SystemContext = createContext<SystemContextType | undefined>(undefined)
@@ -19,6 +20,7 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null)
   const [cameras, setCameras] = useState<Camera[]>([])
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([])
+  const [isLoadingCameras, setIsLoadingCameras] = useState(false)
 
   const refreshSystemHealth = () => {
     const health = getSystemHealth(cameras)
@@ -26,6 +28,7 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }
 
   const refreshCameras = async () => {
+    setIsLoadingCameras(true)
     const { data, error } = await supabase
       .from('cameras')
       .select('*')
@@ -33,6 +36,7 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     if (error) {
       console.error('Failed to fetch cameras:', error.message)
+      setIsLoadingCameras(false)
       return
     }
 
@@ -50,6 +54,7 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }))
 
     setCameras(mapped)
+    setIsLoadingCameras(false)
   }
 
   const refreshAuditLog = async () => {
@@ -106,6 +111,7 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         refreshSystemHealth,
         refreshCameras,
         refreshAuditLog,
+        isLoadingCameras,
       }}
     >
       {children}

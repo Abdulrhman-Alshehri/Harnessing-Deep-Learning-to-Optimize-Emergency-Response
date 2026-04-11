@@ -1,7 +1,7 @@
 [build]
   base      = "GUI"
   command   = "npm run build"
-  publish   = "GUI/dist"
+  publish   = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
