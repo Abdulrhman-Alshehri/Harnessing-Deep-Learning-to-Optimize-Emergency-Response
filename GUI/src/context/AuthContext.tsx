@@ -12,9 +12,21 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// Synchronously check if a Supabase session exists in localStorage.
+// Avoids showing the loading spinner on fresh visits with no session.
+const hasStoredSession = (): boolean => {
+  try {
+    return Object.keys(localStorage).some(
+      (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+    )
+  } catch {
+    return false
+  }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(hasStoredSession)
 
   // Fetch user profile from the profiles table after auth
   const fetchProfile = async (userId: string): Promise<User | null> => {
@@ -39,8 +51,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   useEffect(() => {
-    // Safety net: never hang longer than 3 seconds
-    const timeout = setTimeout(() => setLoading(false), 3000)
+    // Safety net: never hang longer than 1 second
+    const timeout = setTimeout(() => setLoading(false), 1000)
 
     // onAuthStateChange fires INITIAL_SESSION on mount — covers getSession() too
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
