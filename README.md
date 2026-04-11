@@ -79,11 +79,12 @@ The second semester will focus on implementation, testing, deployment, and final
 - Review and address committee recommendations
 
 #### Weeks 2-8: Implementation Phase (Jan 25 - Mar 29, 2026)
-- Development of the accident detection model using YOLOv8
-- Implementation of real-time video processing with OpenCV
-- Training the model on traffic accident datasets (5,700+ videos)
-- Development of the alert dashboard using Flask
-- Integration of all system components
+- Development of a multi-path accident detection pipeline: EfficientNet-B0 (frame classifier), TimeSformer (video ViT, F1=0.88), and YOLO11+ByteTrack (physics-informed tracker)
+- Implementation of real-time video processing with scale-invariant collision detection (BH/s²)
+- Training on the CADP dataset (230 videos, 10,313 annotated frames)
+- Development of a VLM triage module using Qwen2.5-VL-7B-AWQ for structured emergency reports
+- Development of the alert dashboard using React/TypeScript and Supabase
+- Integration of all system components into a unified pipeline
 - Bi-weekly progress reports (Reports #1, #2, #3, #4)
 - **Midterm Report Submission:** March 29, 2026
 
@@ -120,10 +121,12 @@ Throughout the semester, the team will submit seven bi-weekly progress reports d
 
 ### Technologies and Tools
 - **Programming Language:** Python
-- **Deep Learning Framework:** TensorFlow/PyTorch
-- **Object Detection:** YOLOv8
-- **Video Processing:** OpenCV
-- **Dashboard:** Flask
+- **Deep Learning Framework:** PyTorch
+- **Models:** EfficientNet-B0, TimeSformer, YOLOv11, Qwen2.5-VL-7B-AWQ (INT4)
+- **Object Tracking:** ByteTrack with height-normalized velocity (BH/s²)
+- **Video Processing:** OpenCV, Decord
+- **Dashboard:** React 18 / TypeScript (Vite), Supabase
+- **Compute:** Google Colab Pro (T4 GPU, 15.6 GB VRAM)
 - **Version Control:** Git/GitHub
 - **Collaboration:** Microsoft Teams, Google Drive
 
