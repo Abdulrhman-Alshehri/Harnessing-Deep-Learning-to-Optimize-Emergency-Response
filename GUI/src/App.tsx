@@ -76,7 +76,7 @@ export default function App() {
           <SystemProvider>
             <IncidentProvider>
               <Router
-                basename="/Emergency-Response-Platform"
+                basename="/"
                 future={{
                   v7_startTransition: true,
                   v7_relativeSplatPath: true,

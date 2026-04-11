@@ -2,59 +2,30 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import { SystemHealth, AuditLogEntry } from '../types/system'
 import { Camera } from '../types/camera'
-feat/supabase-auth-and-database
 import { getSystemHealth } from '../services/dataService'
-=======
-import { getSystemHealth, getAuditLog, mockCameras } from '../services/dataService'
-import { getDriveCameras, hasDriveCameras } from '../services/driveCameras'
-main
 
 interface SystemContextType {
   systemHealth: SystemHealth | null
   cameras: Camera[]
   auditLog: AuditLogEntry[]
   refreshSystemHealth: () => void
-feat/supabase-auth-and-database
   refreshCameras: () => Promise<void>
   refreshAuditLog: () => Promise<void>
-=======
-  refreshCameras: () => void
-  refreshAuditLog: () => void
-  isLoadingCameras: boolean
-main
 }
 
 const SystemContext = createContext<SystemContextType | undefined>(undefined)
 
 export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null)
-  const [cameras, setCameras] = useState<Camera[]>(mockCameras) // Start with mock data
+  const [cameras, setCameras] = useState<Camera[]>([])
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([])
-  const [isLoadingCameras, setIsLoadingCameras] = useState(false)
 
-feat/supabase-auth-and-database
-=======
-  useEffect(() => {
-    refreshSystemHealth()
-    refreshCameras()
-    refreshAuditLog()
-    
-    const interval = setInterval(() => {
-      refreshSystemHealth()
-    }, 60000) // Refresh every minute
-
-    return () => clearInterval(interval)
-  }, [])
-
-main
   const refreshSystemHealth = () => {
-    // System health reflects backend AI engine state — served by the backend team
     const health = getSystemHealth(cameras)
     setSystemHealth(health)
   }
 
   const refreshCameras = async () => {
-feat/supabase-auth-and-database
     const { data, error } = await supabase
       .from('cameras')
       .select('*')
@@ -79,22 +50,6 @@ feat/supabase-auth-and-database
     }))
 
     setCameras(mapped)
-=======
-    setIsLoadingCameras(true)
-    try {
-      // Check if Google Drive videos are configured
-      if (hasDriveCameras()) {
-        console.log('📹 Loading cameras from Google Drive videos...')
-        const driveCams = getDriveCameras()
-        setCameras(driveCams)
-      } else {
-        console.log('📹 Using demo camera feeds (configure Google Drive in driveCameras.ts)')
-        setCameras(mockCameras)
-      }
-    } finally {
-      setIsLoadingCameras(false)
-    }
-main
   }
 
   const refreshAuditLog = async () => {
@@ -151,7 +106,6 @@ main
         refreshSystemHealth,
         refreshCameras,
         refreshAuditLog,
-        isLoadingCameras,
       }}
     >
       {children}

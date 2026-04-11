@@ -104,7 +104,6 @@ export const IncidentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       .update({ status: 'acknowledged' })
       .eq('id', id)
 
-feat/supabase-auth-and-database
     if (updateError) {
       console.error('Failed to acknowledge incident:', updateError.message)
       return
@@ -118,28 +117,6 @@ feat/supabase-auth-and-database
     })
 
     await refreshIncidents()
-=======
-  const acknowledgeIncident = (id: string, _userId: string, userName: string) => {
-    setIncidents((prev) =>
-      prev.map((inc) => {
-        if (inc.id === id) {
-          return {
-            ...inc,
-            status: 'acknowledged',
-            actionLog: [
-              ...inc.actionLog,
-              {
-                timestamp: new Date(),
-                user: userName,
-                action: `Alert accepted by ${userName}`,
-              },
-            ],
-          }
-        }
-        return inc
-      })
-    )
-main
   }
 
   const updateIncidentStatus = async (id: string, status: Incident['status']) => {

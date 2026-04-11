@@ -1,22 +1,11 @@
 import { Camera } from '../types/camera'
 import { SystemHealth } from '../types/system'
+import { Incident } from '../types/incident'
+import { User } from '../types/user'
 
-feat/supabase-auth-and-database
-/**
- * getSystemHealth
- *
- * Returns the current system health snapshot.
- * The AI engine, alerting service, and performance metrics are provided
- * by the backend AI pipeline — this function computes the camera counts
- * from the live camera list fetched from Supabase.
- *
- * TODO: Replace static performance values with a real backend health endpoint.
- */
-export const getSystemHealth = (cameras: Camera[] = []): SystemHealth => ({
-=======
 // GENUINE LIVE PUBLIC CCTV CAMERAS
 // Sourced directly from Transport for London (TfL) JamCam Network
-// These are real, active DOT traffic cameras that stream live video 
+// These are real, active DOT traffic cameras that stream live video
 // Updated: March 2026 - Active working live urls
 
 export const mockCameras: Camera[] = [
@@ -72,23 +61,14 @@ export const mockCameras: Camera[] = [
   },
 ]
 
-// ===== FOR REAL PUBLIC CCTV CAMERAS =====
-// See src/services/publicCameras.ts for live traffic camera options:
-// - EarthCam public streams (Times Square, Abbey Road, etc.)
-// - Windy Webcams API (free, worldwide)  
-// - YouTube Live traffic streams
-// - DOT image feeds (USA/Europe)
-//
-// Note: Most require CORS proxy or backend due to browser security
-
 // Accident evidence photos - Using reliable CDN sources
 const accidentImages = [
-  'https://images.pexels.com/photos/1545743/pexels-photo-1545743.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1', // Car accident damage
-  'https://images.pexels.com/photos/190574/pexels-photo-190574.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1', // Traffic accident scene
-  'https://images.pexels.com/photos/163016/crash-test-collision-60-km-h-distraction-163016.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1', // Crash test collision
-  'https://images.pexels.com/photos/1409999/pexels-photo-1409999.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1', // Damaged vehicle
-  'https://images.pexels.com/photos/5800713/pexels-photo-5800713.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1', // Accident scene
-  'https://images.pexels.com/photos/1445593/pexels-photo-1445593.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1', // Broken windshield
+  'https://images.pexels.com/photos/1545743/pexels-photo-1545743.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1',
+  'https://images.pexels.com/photos/190574/pexels-photo-190574.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1',
+  'https://images.pexels.com/photos/163016/crash-test-collision-60-km-h-distraction-163016.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1',
+  'https://images.pexels.com/photos/1409999/pexels-photo-1409999.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1',
+  'https://images.pexels.com/photos/5800713/pexels-photo-5800713.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1',
+  'https://images.pexels.com/photos/1445593/pexels-photo-1445593.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&dpr=1',
 ]
 
 export const mockIncidents: Incident[] = [
@@ -97,7 +77,7 @@ export const mockIncidents: Incident[] = [
     caseId: 'ER-20240521-0012',
     location: 'King Fahd Road @ Olaya Junction, Riyadh',
     coordinates: { latitude: 24.7136, longitude: 46.6753 },
-    time: new Date(Date.now() - 2 * 60000), // 2 minutes ago
+    time: new Date(Date.now() - 2 * 60000),
     severity: 'high',
     status: 'new',
     aiSummary: 'Multi-vehicle collision involving a commercial truck and two passenger cars. Reports indicate significant front-end damage to one vehicle, with potential for fluid leaks. Emergency services are en route. Traffic is heavily impacted in the southbound lanes.',
@@ -125,7 +105,7 @@ export const mockIncidents: Incident[] = [
     caseId: 'ER-20240521-0011',
     location: 'Northern Ring Road @ Exit 7, Riyadh',
     coordinates: { latitude: 24.7736, longitude: 46.7381 },
-    time: new Date(Date.now() - 15 * 60000), // 15 minutes ago
+    time: new Date(Date.now() - 15 * 60000),
     severity: 'moderate',
     status: 'acknowledged',
     aiSummary: 'Single vehicle collision with highway barrier. White sedan appears to have lost control. Driver is conscious and moving. Minor debris on roadway. Right two lanes affected.',
@@ -165,7 +145,7 @@ export const mockIncidents: Incident[] = [
     caseId: 'ER-20240521-0010',
     location: 'King Abdullah Road @ Al Muruj District',
     coordinates: { latitude: 24.6901, longitude: 46.6697 },
-    time: new Date(Date.now() - 45 * 60000), // 45 minutes ago
+    time: new Date(Date.now() - 45 * 60000),
     severity: 'low',
     status: 'scene_cleared',
     aiSummary: 'Minor fender bender between two vehicles. No visible injuries. Drivers exchanging information. Minimal traffic impact.',
@@ -225,8 +205,17 @@ export const mockUsers: User[] = [
   },
 ]
 
-export const getSystemHealth = (): SystemHealth => ({
-main
+/**
+ * getSystemHealth
+ *
+ * Returns the current system health snapshot.
+ * The AI engine, alerting service, and performance metrics are provided
+ * by the backend AI pipeline — this function computes the camera counts
+ * from the live camera list fetched from Supabase.
+ *
+ * TODO: Replace static performance values with a real backend health endpoint.
+ */
+export const getSystemHealth = (cameras: Camera[] = []): SystemHealth => ({
   aiEngine: { status: 'online', lastCheck: new Date() },
   alertingService: { status: 'online', lastCheck: new Date() },
   database: { status: 'healthy', lastCheck: new Date() },
