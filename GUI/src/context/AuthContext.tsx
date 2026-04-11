@@ -13,28 +13,36 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 // Synchronously check if a Supabase session exists in localStorage.
-// Avoids showing the loading spinner on fresh visits with no session.
 const hasStoredSession = (): boolean => {
   try {
-    return Object.keys(localStorage).some(
-      (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
-    )
-  } catch {
+    const keys = Object.keys(localStorage)
+    const found = keys.some((k) => k.startsWith('sb-') && k.endsWith('-auth-token'))
+    console.log('[AuthContext] hasStoredSession:', found, '| localStorage keys:', keys)
+    return found
+  } catch (e) {
+    console.error('[AuthContext] localStorage read failed:', e)
     return false
   }
 }
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(hasStoredSession)
+  const [loading, setLoading] = useState(() => {
+    const result = hasStoredSession()
+    console.log('[AuthContext] Initial loading state:', result)
+    return result
+  })
 
   // Fetch user profile from the profiles table after auth
   const fetchProfile = async (userId: string): Promise<User | null> => {
+    console.log('[AuthContext] fetchProfile called for userId:', userId)
+    const t0 = performance.now()
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single()
+    console.log('[AuthContext] fetchProfile took', (performance.now() - t0).toFixed(0), 'ms | error:', error?.message ?? 'none')
 
     if (error || !data) return null
 
@@ -51,12 +59,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   useEffect(() => {
-    // Safety net: never hang longer than 1 second
-    const timeout = setTimeout(() => setLoading(false), 1000)
+    console.log('[AuthContext] useEffect mount — setting up onAuthStateChange')
+    const t0 = performance.now()
 
-    // onAuthStateChange fires INITIAL_SESSION on mount — covers getSession() too
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      clearTimeout(timeout)
+    // Safety net: never hang longer than 1 second
+    const timeout = setTimeout(() => {
+      console.warn('[AuthContext] ⚠️ Safety timeout fired after 1s — onAuthStateChange never fired!')
+      setLoading(false)
+    }, 1000)
+
+    let firstEvent = true
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const elapsed = (performance.now() - t0).toFixed(0)
+      console.log(`[AuthContext] onAuthStateChange fired | event: ${event} | elapsed: ${elapsed}ms | session:`, !!session)
+
+      if (firstEvent) {
+        clearTimeout(timeout)
+        firstEvent = false
+      }
+
       if (session?.user) {
         const profile = await fetchProfile(session.user.id)
         setUser(profile)
@@ -73,12 +94,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    console.log('[AuthContext] login() called for:', email)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-
     if (error) {
+      console.error('[AuthContext] login failed:', error.message)
       return { success: false, error: error.message }
     }
-
+    console.log('[AuthContext] login succeeded')
     return { success: true }
   }
 
