@@ -79,12 +79,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (session?.user) {
-        const profile = await fetchProfile(session.user.id)
-        setUser(profile)
+        // Unblock loading immediately using session data — don't await the DB query
+        setUser({
+          id: session.user.id,
+          email: session.user.email ?? '',
+          name: session.user.email ?? '',
+          role: 'responder',
+        })
+        setLoading(false)
+
+        // Fetch full profile (name, role, agency) in the background
+        fetchProfile(session.user.id).then((profile) => {
+          if (profile) setUser(profile)
+        })
       } else {
         setUser(null)
+        setLoading(false)
       }
-      setLoading(false)
     })
 
     return () => {
