@@ -7,7 +7,7 @@ import MapView from '../../components/common/MapView';
 import './ResponderDashboard.css';
 
 const ResponderDashboard: React.FC = () => {
-  const { incidents, loading } = useIncidents();
+  const { incidents, loading, error, refreshIncidents } = useIncidents();
   const navigate = useNavigate();
   const [selectedIncident, setSelectedIncident] = useState<string | null>(null);
 
@@ -85,9 +85,20 @@ const ResponderDashboard: React.FC = () => {
                 <div className="empty-state">
                   <span className="material-symbols-outlined" style={{ animation: 'spin 1s linear infinite' }}>progress_activity</span>
                   <p>Loading incidents...</p>
+                  <p className="loading-hint">This may take a moment on first load</p>
                 </div>
               )}
-              {!loading && activeIncidents.map((incident) => (
+              {!loading && error && (
+                <div className="empty-state error-state">
+                  <span className="material-symbols-outlined">cloud_off</span>
+                  <p>{error}</p>
+                  <button className="retry-btn" onClick={refreshIncidents}>
+                    <span className="material-symbols-outlined">refresh</span>
+                    Retry
+                  </button>
+                </div>
+              )}
+              {!loading && !error && activeIncidents.map((incident) => (
                 <div
                   key={incident.id}
                   className={`incident-card ${selectedIncident === incident.id ? 'selected' : ''}`}
@@ -125,7 +136,7 @@ const ResponderDashboard: React.FC = () => {
                 </div>
               ))}
 
-              {!loading && activeIncidents.length === 0 && (
+              {!loading && !error && activeIncidents.length === 0 && (
                 <div className="empty-state">
                   <span className="material-symbols-outlined">check_circle</span>
                   <p>No active incidents</p>
