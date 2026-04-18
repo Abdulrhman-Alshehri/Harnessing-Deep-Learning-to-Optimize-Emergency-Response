@@ -62,7 +62,7 @@ const CamerasScreen: React.FC = () => {
             </div>
             <div className="expanded-embed">
               <iframe
-                src={`https://www.youtube.com/embed/${expandedCamera.videoId}?autoplay=1&mute=1`}
+                src={`https://www.youtube.com/embed/${expandedCamera.videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&loop=1&playlist=${expandedCamera.videoId}&playsinline=1`}
                 title={expandedCamera.name}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
@@ -100,7 +100,7 @@ const CamerasScreen: React.FC = () => {
               <div className="camera-embed">
                 {camera.status === 'online' ? (
                   <iframe
-                    src={`https://www.youtube.com/embed/${camera.videoId}?autoplay=0&mute=1`}
+                    src={`https://www.youtube.com/embed/${camera.videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&loop=1&playlist=${camera.videoId}&playsinline=1`}
                     title={camera.name}
                     loading="lazy"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
