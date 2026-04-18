@@ -6,6 +6,7 @@ interface IncidentContextType {
   incidents: Incident[]
   activeIncidents: Incident[]
   loading: boolean
+  error: string | null
   getIncident: (id: string) => Incident | undefined
   acknowledgeIncident: (id: string, userId: string, userName: string) => Promise<void>
   updateIncidentStatus: (id: string, status: Incident['status']) => Promise<void>
@@ -63,12 +64,16 @@ const mapRowToIncident = (row: Record<string, unknown>): Incident => ({
   })),
 })
 
+const RETRY_DELAYS = [2000, 4000, 8000]
+const FALLBACK_POLL_MS = 2 * 60 * 1000
+
 export const IncidentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [incidents, setIncidents] = useState<Incident[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const refreshIncidents = async () => {
-    const { data, error } = await supabase
+  const fetchOnce = async (): Promise<boolean> => {
+    const { data, error: fetchError } = await supabase
       .from('incidents')
       .select(`
         *,
@@ -79,13 +84,29 @@ export const IncidentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       `)
       .order('time', { ascending: false })
 
-    if (error) {
-      console.error('Failed to fetch incidents:', error.message)
-      setLoading(false)
-      return
+    if (fetchError) {
+      console.error('Failed to fetch incidents:', fetchError.message)
+      return false
     }
 
     setIncidents((data ?? []).map(mapRowToIncident))
+    setError(null)
+    return true
+  }
+
+  const refreshIncidents = async () => {
+    setError(null)
+    for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+      const ok = await fetchOnce()
+      if (ok) {
+        setLoading(false)
+        return
+      }
+      if (attempt < RETRY_DELAYS.length) {
+        await new Promise(res => setTimeout(res, RETRY_DELAYS[attempt]))
+      }
+    }
+    setError('Unable to load incidents. Check your connection and try again.')
     setLoading(false)
   }
 
@@ -94,14 +115,20 @@ export const IncidentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const channel = supabase
       .channel('incidents-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'incidents' }, refreshIncidents)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'incident_photos' }, refreshIncidents)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'action_logs' }, refreshIncidents)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'dispatched_units' }, refreshIncidents)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'collaboration_messages' }, refreshIncidents)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'incidents' }, () => fetchOnce())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'incident_photos' }, () => fetchOnce())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'action_logs' }, () => fetchOnce())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dispatched_units' }, () => fetchOnce())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'collaboration_messages' }, () => fetchOnce())
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    // Fallback poll — catches missed realtime events or channel reconnections
+    const fallback = setInterval(() => fetchOnce(), FALLBACK_POLL_MS)
+
+    return () => {
+      supabase.removeChannel(channel)
+      clearInterval(fallback)
+    }
   }, [])
 
   const activeIncidents = incidents.filter(
@@ -180,6 +207,7 @@ export const IncidentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         incidents,
         activeIncidents,
         loading,
+        error,
         getIncident,
         acknowledgeIncident,
         updateIncidentStatus,

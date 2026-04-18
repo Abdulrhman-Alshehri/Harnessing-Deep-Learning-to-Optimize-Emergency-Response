@@ -30,6 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
   const responderNavItems: NavItem[] = [
     { path: '/responder/dashboard', label: 'Dashboard', icon: 'dashboard' },
     { path: '/responder/archives', label: 'Incidents', icon: 'warning' },
+    { path: '/responder/cameras', label: 'Cameras', icon: 'videocam' },
   ];
 
   const navItems = userRole === 'admin' ? adminNavItems : responderNavItems;

@@ -19,6 +19,7 @@ import VideoTest from './screens/admin/VideoTest'
 import ResponderDashboard from './screens/responder/ResponderDashboard'
 import IncidentDetails from './screens/responder/IncidentDetails'
 import IncidentArchives from './screens/responder/IncidentArchives'
+import CamerasScreen from './screens/responder/CamerasScreen'
 
 function ProtectedRoute({ requiredRole }: { requiredRole?: 'admin' | 'responder' }) {
   const { isAuthenticated, user, loading } = useAuth()
@@ -61,6 +62,7 @@ function AppRoutes() {
         <Route path="dashboard" element={<ResponderDashboard />} />
         <Route path="incident/:id" element={<IncidentDetails />} />
         <Route path="archives" element={<IncidentArchives />} />
+        <Route path="cameras" element={<CamerasScreen />} />
       </Route>
 
       <Route path="/" element={<Navigate to={isAuthenticated ? (user?.role === 'admin' ? '/admin/dashboard' : '/responder/dashboard') : '/login'} replace />} />
