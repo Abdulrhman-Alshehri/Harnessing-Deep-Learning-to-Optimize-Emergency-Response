@@ -5,6 +5,7 @@ import { Incident } from '../types/incident'
 interface IncidentContextType {
   incidents: Incident[]
   activeIncidents: Incident[]
+  loading: boolean
   getIncident: (id: string) => Incident | undefined
   acknowledgeIncident: (id: string, userId: string, userName: string) => Promise<void>
   updateIncidentStatus: (id: string, status: Incident['status']) => Promise<void>
@@ -64,6 +65,7 @@ const mapRowToIncident = (row: Record<string, unknown>): Incident => ({
 
 export const IncidentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [incidents, setIncidents] = useState<Incident[]>([])
+  const [loading, setLoading] = useState(true)
 
   const refreshIncidents = async () => {
     const { data, error } = await supabase
@@ -79,17 +81,27 @@ export const IncidentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     if (error) {
       console.error('Failed to fetch incidents:', error.message)
+      setLoading(false)
       return
     }
 
     setIncidents((data ?? []).map(mapRowToIncident))
+    setLoading(false)
   }
 
   useEffect(() => {
     refreshIncidents()
 
-    const interval = setInterval(refreshIncidents, 30000)
-    return () => clearInterval(interval)
+    const channel = supabase
+      .channel('incidents-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'incidents' }, refreshIncidents)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'incident_photos' }, refreshIncidents)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'action_logs' }, refreshIncidents)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dispatched_units' }, refreshIncidents)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'collaboration_messages' }, refreshIncidents)
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   const activeIncidents = incidents.filter(
@@ -167,6 +179,7 @@ export const IncidentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       value={{
         incidents,
         activeIncidents,
+        loading,
         getIncident,
         acknowledgeIncident,
         updateIncidentStatus,

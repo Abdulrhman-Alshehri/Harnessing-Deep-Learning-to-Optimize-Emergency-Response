@@ -7,7 +7,7 @@ import MapView from '../../components/common/MapView';
 import './ResponderDashboard.css';
 
 const ResponderDashboard: React.FC = () => {
-  const { incidents } = useIncidents();
+  const { incidents, loading } = useIncidents();
   const navigate = useNavigate();
   const [selectedIncident, setSelectedIncident] = useState<string | null>(null);
 
@@ -81,7 +81,13 @@ const ResponderDashboard: React.FC = () => {
             </div>
             
             <div className="incidents-list">
-              {activeIncidents.map((incident) => (
+              {loading && (
+                <div className="empty-state">
+                  <span className="material-symbols-outlined" style={{ animation: 'spin 1s linear infinite' }}>progress_activity</span>
+                  <p>Loading incidents...</p>
+                </div>
+              )}
+              {!loading && activeIncidents.map((incident) => (
                 <div
                   key={incident.id}
                   className={`incident-card ${selectedIncident === incident.id ? 'selected' : ''}`}
@@ -119,7 +125,7 @@ const ResponderDashboard: React.FC = () => {
                 </div>
               ))}
 
-              {activeIncidents.length === 0 && (
+              {!loading && activeIncidents.length === 0 && (
                 <div className="empty-state">
                   <span className="material-symbols-outlined">check_circle</span>
                   <p>No active incidents</p>
