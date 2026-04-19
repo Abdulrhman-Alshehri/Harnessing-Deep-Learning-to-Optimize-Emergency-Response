@@ -110,7 +110,7 @@ const IncidentDetails: React.FC = () => {
             </div>
             {/* Row 2: title + action buttons */}
             <div className="header-main-row">
-              <div className="header-title-block">
+              <div className="header-title-group">
                 <h1 className="incident-title">Accident Details</h1>
                 <p className="incident-subtitle">
                   Case ID: <span className="case-id-highlight">{incident.caseId}</span>
