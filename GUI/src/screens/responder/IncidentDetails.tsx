@@ -104,6 +104,7 @@ const IncidentDetails: React.FC = () => {
             <div className="header-title-group">
               <button className="back-button" onClick={() => navigate('/responder/dashboard')}>
                 <span className="material-symbols-outlined">arrow_back</span>
+                Back
               </button>
               <div>
                 <h1 className="incident-title">Accident Details</h1>
