@@ -46,8 +46,8 @@
 /* Header */
 .incident-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 1.25rem;
   margin-bottom: 2rem;
   padding: 1.5rem 2rem;
   background: var(--glass-bg);
@@ -55,25 +55,18 @@
   border: 1px solid var(--glass-border);
   border-radius: 1rem;
   animation: fadeInDown 0.6s ease forwards;
-  flex-wrap: wrap;
-  gap: 1.5rem;
 }
 
-.header-title-group {
+/* Row 1: back button */
+.header-nav-row {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.625rem;
-  flex: 1;
-  min-width: 300px;
+  align-items: center;
 }
 
 .back-button {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  width: auto;
-  height: auto;
   padding: 0.375rem 0.875rem 0.375rem 0.625rem;
   background: linear-gradient(135deg, rgba(157, 238, 43, 0.08) 0%, rgba(157, 238, 43, 0.03) 100%);
   color: var(--color-text-secondary);
@@ -95,6 +88,20 @@
 
 .back-button .material-symbols-outlined {
   font-size: 1.125rem;
+}
+
+/* Row 2: title + actions */
+.header-main-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.header-title-block {
+  flex: 1;
+  min-width: 200px;
 }
 
 .incident-title {

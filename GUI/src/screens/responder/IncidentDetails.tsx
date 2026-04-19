@@ -101,48 +101,52 @@ const IncidentDetails: React.FC = () => {
         <div className="incident-container">
           {/* Header */}
           <header className="incident-header">
-            <div className="header-title-group">
+            {/* Row 1: back navigation */}
+            <div className="header-nav-row">
               <button className="back-button" onClick={() => navigate('/responder/dashboard')}>
                 <span className="material-symbols-outlined">arrow_back</span>
-                Back
+                Back to Dashboard
               </button>
-              <div>
+            </div>
+            {/* Row 2: title + action buttons */}
+            <div className="header-main-row">
+              <div className="header-title-block">
                 <h1 className="incident-title">Accident Details</h1>
                 <p className="incident-subtitle">
                   Case ID: <span className="case-id-highlight">{incident.caseId}</span>
                 </p>
               </div>
-            </div>
-            <div className="header-actions">
-              {incident.status === 'new' && (
-                <button className="btn btn-primary" onClick={handleAcknowledge} disabled={isActing}>
-                  <span className="material-symbols-outlined">check_circle</span>
-                  Acknowledge
-                </button>
-              )}
-              {nextStatuses.filter(s => s !== 'closed' && s !== 'acknowledged').map(status => (
-                <button
-                  key={status}
-                  className="btn btn-outline"
-                  onClick={() => handleStatusUpdate(status)}
-                  disabled={isActing}
-                >
-                  {status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                </button>
-              ))}
-              <button className="btn btn-secondary" onClick={handleGeneratePDF} disabled={isGeneratingPDF}>
-                {isGeneratingPDF ? (
-                  <>
-                    <span className="material-symbols-outlined spinning">sync</span>
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined">print</span>
-                    Generate PDF
-                  </>
+              <div className="header-actions">
+                {incident.status === 'new' && (
+                  <button className="btn btn-primary" onClick={handleAcknowledge} disabled={isActing}>
+                    <span className="material-symbols-outlined">check_circle</span>
+                    Acknowledge
+                  </button>
                 )}
-              </button>
+                {nextStatuses.filter(s => s !== 'closed' && s !== 'acknowledged').map(status => (
+                  <button
+                    key={status}
+                    className="btn btn-outline"
+                    onClick={() => handleStatusUpdate(status)}
+                    disabled={isActing}
+                  >
+                    {status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                  </button>
+                ))}
+                <button className="btn btn-secondary" onClick={handleGeneratePDF} disabled={isGeneratingPDF}>
+                  {isGeneratingPDF ? (
+                    <>
+                      <span className="material-symbols-outlined spinning">sync</span>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined">print</span>
+                      Generate PDF
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </header>
 
