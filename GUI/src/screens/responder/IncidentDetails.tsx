@@ -99,56 +99,56 @@ const IncidentDetails: React.FC = () => {
 
       <main className="incident-details-main">
         <div className="incident-container">
-          {/* Header */}
-          <header className="incident-header">
-            {/* Row 1: back navigation */}
-            <div className="header-nav-row">
-              <button className="back-button" onClick={() => navigate('/responder/dashboard')}>
-                <span className="material-symbols-outlined">arrow_back</span>
-                Back to Dashboard
+          {/* Breadcrumb */}
+          <div className="id-breadcrumb">
+            <button className="id-back-btn" onClick={() => navigate('/responder/dashboard')}>
+              <span className="material-symbols-outlined">arrow_back</span>
+              Dashboard
+            </button>
+            <span className="id-sep">/</span>
+            <span className="id-crumb-current">Incident Details</span>
+          </div>
+
+          {/* Title bar */}
+          <div className="id-title-bar">
+            <div className="id-title-block">
+              <h1 className="id-title">Accident Details</h1>
+              <p className="id-subtitle">
+                Case ID: <span className="id-case-id">{incident.caseId}</span>
+              </p>
+            </div>
+            <div className="id-actions">
+              {incident.status === 'new' && (
+                <button className="btn btn-primary" onClick={handleAcknowledge} disabled={isActing}>
+                  <span className="material-symbols-outlined">check_circle</span>
+                  Acknowledge
+                </button>
+              )}
+              {nextStatuses.filter(s => s !== 'closed' && s !== 'acknowledged').map(status => (
+                <button
+                  key={status}
+                  className="btn btn-outline"
+                  onClick={() => handleStatusUpdate(status)}
+                  disabled={isActing}
+                >
+                  {status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                </button>
+              ))}
+              <button className="btn btn-secondary" onClick={handleGeneratePDF} disabled={isGeneratingPDF}>
+                {isGeneratingPDF ? (
+                  <>
+                    <span className="material-symbols-outlined spinning">sync</span>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined">print</span>
+                    Generate PDF
+                  </>
+                )}
               </button>
             </div>
-            {/* Row 2: title + action buttons */}
-            <div className="header-main-row">
-              <div className="header-title-group">
-                <h1 className="incident-title">Accident Details</h1>
-                <p className="incident-subtitle">
-                  Case ID: <span className="case-id-highlight">{incident.caseId}</span>
-                </p>
-              </div>
-              <div className="header-actions">
-                {incident.status === 'new' && (
-                  <button className="btn btn-primary" onClick={handleAcknowledge} disabled={isActing}>
-                    <span className="material-symbols-outlined">check_circle</span>
-                    Acknowledge
-                  </button>
-                )}
-                {nextStatuses.filter(s => s !== 'closed' && s !== 'acknowledged').map(status => (
-                  <button
-                    key={status}
-                    className="btn btn-outline"
-                    onClick={() => handleStatusUpdate(status)}
-                    disabled={isActing}
-                  >
-                    {status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                  </button>
-                ))}
-                <button className="btn btn-secondary" onClick={handleGeneratePDF} disabled={isGeneratingPDF}>
-                  {isGeneratingPDF ? (
-                    <>
-                      <span className="material-symbols-outlined spinning">sync</span>
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined">print</span>
-                      Generate PDF
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </header>
+          </div>
 
           {/* Main Grid */}
           <div className="incident-grid">
