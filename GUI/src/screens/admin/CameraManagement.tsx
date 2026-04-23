@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSystem } from '../../context/SystemContext';
 import Sidebar from '../../components/common/Sidebar';
-import VideoModal from '../../components/common/VideoModal';
+import CctvFeed from '../../components/common/CctvFeed';
 import { Camera } from '../../types/camera';
 import './CameraManagement.css';
 
@@ -9,33 +9,7 @@ const CameraManagement: React.FC = () => {
   const { cameras, isLoadingCameras } = useSystem();
   const [searchQuery, setSearchQuery] = useState('');
   const [_showAddModal, setShowAddModal] = useState(false);
-  const [selectedCamera, setSelectedCamera] = useState<Camera | null>(null);
-  const [showVideoModal, setShowVideoModal] = useState(false);
-  
-  // Real-time API simulator: Force the browser to grab the latest 10-second traffic clip 
-  // from the DOT servers every 5 minutes by updating a cache-busting timestamp
-  const [videoTimestamp, setVideoTimestamp] = useState(Date.now());
-
-  useEffect(() => {
-    // Refresh the DOT video feeds every 5 minutes (300000ms)
-    // Traffic cameras typically record a new clip every 5 minutes
-    const interval = setInterval(() => {
-      setVideoTimestamp(Date.now());
-      console.log('Fetching latest live traffic clips from DOT servers...');
-    }, 300000); 
-    
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleViewCamera = (camera: Camera) => {
-    setSelectedCamera(camera);
-    setShowVideoModal(true);
-  };
-
-  const handleCloseVideo = () => {
-    setShowVideoModal(false);
-    setSelectedCamera(null);
-  };
+  const [expandedCamera, setExpandedCamera] = useState<Camera | null>(null);
 
   const filteredCameras = cameras.filter(camera =>
     camera.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -144,58 +118,18 @@ const CameraManagement: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* Live Video Preview */}
-                  <div 
+                  {/* CCTV Feed Preview */}
+                  <div
                     className="camera-preview-container"
-                    onClick={() => handleViewCamera(camera)}
+                    onClick={() => setExpandedCamera(expandedCamera?.id === camera.id ? null : camera)}
                     style={{ cursor: 'pointer' }}
-                    title="Click to view full screen"
+                    title="Click to expand"
                   >
-                    {camera.status === 'online' && camera.videoUrl ? (
-                      // Check if it's an embeddable URL (YouTube, Skyline Webcams, or Google Drive)
-                      (camera.videoUrl.includes('youtube.com/embed') || 
-                       camera.videoUrl.includes('youtu.be') ||
-                       camera.videoUrl.includes('skylinewebcams.com') ||
-                       (camera.videoUrl.includes('drive.google.com') && camera.videoUrl.includes('/preview'))) ? (
-                        <iframe
-                          className="camera-preview-video"
-                          src={camera.videoUrl}
-                          allow="autoplay; encrypted-media"
-                          allowFullScreen
-                          style={{ width: '100%', height: '100%', border: 'none', pointerEvents: 'none' }}
-                        />
-                      ) : (
-                        <video 
-                          key={`${camera.id}-${videoTimestamp}`}
-                          className="camera-preview-video"
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          src={`${camera.videoUrl}?t=${videoTimestamp}`}
-                          autoPlay
-                          loop
-                          muted
-                          playsInline
-                        />
-                      )
-                    ) : camera.status === 'online' ? (
-                      <div className="camera-preview-placeholder">
-                        <span className="material-symbols-outlined">live_tv</span>
-                        <span className="preview-text">Live Stream</span>
-                      </div>
-                    ) : (
-                      <div className="camera-preview-placeholder offline">
-                        <span className="material-symbols-outlined">videocam_off</span>
-                        <span className="preview-text">Offline</span>
-                      </div>
-                    )}
-                    {camera.status === 'online' && (
-                      <div className="live-indicator">
-                        <span className="live-dot"></span>
-                        <span>LIVE</span>
-                      </div>
-                    )}
-                    <div className="preview-overlay">
-                      <span className="material-symbols-outlined">fullscreen</span>
-                    </div>
+                    <CctvFeed
+                      cameraId={camera.id}
+                      location={camera.location}
+                      status={camera.status}
+                    />
                   </div>
 
                   <div className="camera-item-body">
@@ -207,12 +141,14 @@ const CameraManagement: React.FC = () => {
                     <p className="camera-id">ID: {camera.id}</p>
 
                     <div className="camera-actions">
-                      <button 
-                        className="btn-icon" 
-                        onClick={() => handleViewCamera(camera)}
-                        title="View Full Screen"
+                      <button
+                        className="btn-icon"
+                        onClick={() => setExpandedCamera(expandedCamera?.id === camera.id ? null : camera)}
+                        title="Expand Feed"
                       >
-                        <span className="material-symbols-outlined">fullscreen</span>
+                        <span className="material-symbols-outlined">
+                          {expandedCamera?.id === camera.id ? 'close_fullscreen' : 'fullscreen'}
+                        </span>
                       </button>
                       <button className="btn-icon" title="Edit Camera">
                         <span className="material-symbols-outlined">edit</span>
@@ -230,16 +166,29 @@ const CameraManagement: React.FC = () => {
         </div>
       </main>
 
-      {/* Video Modal */}
-      {selectedCamera && (
-        <VideoModal
-          isOpen={showVideoModal}
-          onClose={handleCloseVideo}
-          cameraName={selectedCamera.name}
-          cameraId={selectedCamera.id}
-          videoUrl={selectedCamera.videoUrl}
-          status={selectedCamera.status}
-        />
+      {/* Expanded CCTV Feed Modal */}
+      {expandedCamera && (
+        <div className="cctv-modal-backdrop" onClick={() => setExpandedCamera(null)}>
+          <div className="cctv-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="cctv-modal-header">
+              <div>
+                <span className="cctv-modal-id">{expandedCamera.id}</span>
+                <h2 className="cctv-modal-name">{expandedCamera.name}</h2>
+                <p className="cctv-modal-location">{expandedCamera.location}</p>
+              </div>
+              <button className="cctv-modal-close" onClick={() => setExpandedCamera(null)}>
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="cctv-modal-feed">
+              <CctvFeed
+                cameraId={expandedCamera.id}
+                location={expandedCamera.location}
+                status={expandedCamera.status}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

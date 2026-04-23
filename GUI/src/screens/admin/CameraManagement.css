@@ -258,142 +258,25 @@
   transform: scale(1.2) rotate(5deg);
 }
 
-/* Camera Video Preview */
+/* CCTV Feed Preview */
 .camera-preview-container {
   position: relative;
   width: 100%;
   height: 180px;
   border-radius: 0.75rem;
   overflow: hidden;
-  background: #000;
+  background: #040904;
   margin-bottom: 1rem;
   border: 2px solid rgba(163, 230, 53, 0.2);
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
   cursor: pointer;
 }
 
 .camera-item:hover .camera-preview-container {
   border-color: rgba(163, 230, 53, 0.5);
-  box-shadow: 0 4px 16px rgba(157, 238, 43, 0.3);
+  box-shadow: 0 4px 16px rgba(157, 238, 43, 0.2);
 }
 
-.camera-preview-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-/* Preview Overlay */
-.preview-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(5px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: all 0.3s ease;
-  z-index: 3;
-}
-
-.camera-preview-container:hover .preview-overlay {
-  opacity: 1;
-}
-
-.preview-overlay .material-symbols-outlined {
-  font-size: 3rem !important;
-  color: var(--color-primary);
-  filter: drop-shadow(0 0 20px rgba(157, 238, 43, 0.8));
-  animation: scaleUp 0.3s ease;
-}
-
-@keyframes scaleUp {
-  from {
-    transform: scale(0.5);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.camera-preview-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, rgba(26, 31, 46, 0.8) 0%, rgba(15, 20, 35, 0.9) 100%);
-  color: var(--color-text-secondary);
-  gap: 0.5rem;
-}
-
-.camera-preview-placeholder .material-symbols-outlined {
-  font-size: 3rem !important;
-  color: var(--color-primary);
-  opacity: 0.6;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-.camera-preview-placeholder.offline .material-symbols-outlined {
-  color: #ef4444;
-}
-
-.preview-text {
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-/* Live Indicator */
-.live-indicator {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.375rem 0.75rem;
-  background: rgba(239, 68, 68, 0.9);
-  backdrop-filter: blur(10px);
-  border-radius: 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: 0.05em;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
-  z-index: 2;
-  animation: fadeIn 0.3s ease;
-}
-
-.live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #fff;
-  animation: livePulse 1.5s ease-in-out infinite;
-}
-
-@keyframes livePulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.5;
-    transform: scale(0.8);
-  }
-}
 
 .camera-status {
   padding: 0.375rem 0.875rem;
@@ -573,4 +456,80 @@
   .camera-list-card {
     padding: 1.5rem;
   }
+}
+
+/* ── Expanded CCTV Modal ── */
+.cctv-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.cctv-modal-box {
+  width: 100%;
+  max-width: 900px;
+  background: #0d1117;
+  border: 1px solid rgba(163, 230, 53, 0.25);
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+
+.cctv-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(163, 230, 53, 0.1);
+}
+
+.cctv-modal-id {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  letter-spacing: 0.08em;
+  font-family: 'Courier New', monospace;
+}
+
+.cctv-modal-name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0.25rem 0;
+}
+
+.cctv-modal-location {
+  font-size: 0.813rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.cctv-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  border-radius: 0.5rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cctv-modal-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--color-text-primary);
+}
+
+.cctv-modal-feed {
+  width: 100%;
+  aspect-ratio: 16 / 9;
 }
