@@ -533,7 +533,8 @@
   overflow: hidden;
 }
 
-.expanded-embed iframe {
+.expanded-embed iframe,
+.camera-embed iframe {
   position: absolute;
   top: -10%;
   left: -2px;
