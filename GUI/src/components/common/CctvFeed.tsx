@@ -4,7 +4,7 @@ import './CctvFeed.css';
 interface CctvFeedProps {
   cameraId: string;
   location: string;
-  status: 'online' | 'offline';
+  status: 'online' | 'offline' | 'degraded';
   /** Optional: extra label shown bottom-right (e.g. "North Junction") */
   sublabel?: string;
 }
@@ -24,7 +24,7 @@ const CctvFeed: React.FC<CctvFeedProps> = ({ cameraId, location, status, sublabe
     return () => clearInterval(id);
   }, []);
 
-  if (status === 'offline') {
+  if (status === 'offline' || status === 'degraded') {
     return (
       <div className="cctv-feed cctv-offline">
         <div className="cctv-noise" />

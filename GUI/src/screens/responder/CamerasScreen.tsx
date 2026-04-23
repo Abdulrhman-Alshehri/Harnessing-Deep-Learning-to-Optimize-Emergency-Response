@@ -7,7 +7,7 @@ interface Camera {
   id: string;
   name: string;
   location: string;
-  status: 'online' | 'offline';
+  status: 'online' | 'offline' | 'degraded';
 }
 
 const DEFAULT_CAMERAS: Camera[] = [
