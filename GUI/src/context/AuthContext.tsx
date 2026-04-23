@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const timeout = setTimeout(() => setLoading(false), 1000)
 
     let firstEvent = true
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (firstEvent) {
         clearTimeout(timeout)
         firstEvent = false
