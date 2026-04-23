@@ -210,7 +210,7 @@ const CameraManagement: React.FC = () => {
                   src={EMBED(CAM_VIDEO_IDS[expandedCamera.id])}
                   allow="autoplay; encrypted-media"
                   allowFullScreen
-                  style={{ position: 'absolute', top: '-10%', left: '-2px', width: 'calc(100% + 4px)', height: '120%', border: 'none' }}
+                  style={{ position: 'absolute', top: '-10%', left: '-2px', width: 'calc(100% + 4px)', height: '120%', border: 'none', pointerEvents: 'none' }}
                 />
               ) : (
                 <div className="camera-preview-placeholder" style={{ position: 'absolute', inset: 0 }}>

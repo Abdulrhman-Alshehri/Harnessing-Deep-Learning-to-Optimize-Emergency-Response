@@ -288,6 +288,12 @@
   pointer-events: none;
 }
 
+/* Block any iframe from going fullscreen */
+.camera-preview-container iframe,
+.cctv-modal-feed iframe {
+  pointer-events: none;
+}
+
 .camera-preview-placeholder {
   position: absolute;
   inset: 0;
