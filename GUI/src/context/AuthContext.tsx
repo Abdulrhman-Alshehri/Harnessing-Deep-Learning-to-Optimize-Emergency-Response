@@ -71,22 +71,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   useEffect(() => {
+    // Safety net: unblock the UI after 1 second no matter what.
+    // On the fast path (trusted cache) we clearTimeout manually.
+    // On the slow path (profile fetch) we let this fire so the login
+    // page appears; the background fetch calls setUser() when done
+    // which triggers an automatic redirect via AppRoutes.
     const timeout = setTimeout(() => setLoading(false), 1000)
 
-    let firstEvent = true
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (firstEvent) {
-        clearTimeout(timeout)
-        firstEvent = false
-      }
-
       if (session?.user) {
         const cache = readCache()
         const trustedRole = cache?.uid === session.user.id ? cache.role : null
 
         if (trustedRole) {
-          // Same user, cache is valid — instant redirect, fetch full profile in background
-          // for name/agency fields only (role won't change unless admin edits it)
+          // Fast path: same user, cache is valid — instant redirect
+          clearTimeout(timeout)
           setUser({
             id: session.user.id,
             email: session.user.email ?? '',
@@ -94,6 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             role: trustedRole,
           })
           setLoading(false)
+          // Enrich name/agency in background; role already trusted
           fetchProfile(session.user.id).then((profile) => {
             if (profile) {
               writeCache(session.user.id, profile.role)
@@ -101,17 +101,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           })
         } else {
-          // New user or different account — must wait for correct role before routing
-          const profile = await fetchProfile(session.user.id)
-          if (profile) {
-            writeCache(session.user.id, profile.role)
-            setUser(profile)
-          } else {
-            setUser(null)
-          }
-          setLoading(false)
+          // Slow path: no trusted cache — fetch profile in background.
+          // The 1-second timeout above will show the login page quickly;
+          // when fetchProfile resolves, setUser() triggers redirect.
+          fetchProfile(session.user.id).then((profile) => {
+            if (profile) {
+              writeCache(session.user.id, profile.role)
+              setUser(profile)
+            }
+            setLoading(false)
+          })
         }
       } else {
+        clearTimeout(timeout)
         setUser(null)
         setLoading(false)
       }
