@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
 import { useSystem } from '../../context/SystemContext';
 import Sidebar from '../../components/common/Sidebar';
-import CctvFeed from '../../components/common/CctvFeed';
 import { Camera } from '../../types/camera';
 import './CameraManagement.css';
+
+// YouTube video IDs mapped to each Supabase camera
+const CAM_VIDEO_IDS: Record<string, string> = {
+  'CAM-001-RUH': 'butK9aqBY1E',
+  'CAM-002-RUH': 'x396CVeU74Q',
+  'CAM-003-RUH': 'IVa59mpPJTg',
+  'CAM-004-RUH': 'Sd9ZD8Vt8tQ',
+  'CAM-005-RUH': 'KpZ8vteYNOw',
+};
+
+const EMBED = (id: string) =>
+  `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1&loop=1&playlist=${id}`;
 
 const CameraManagement: React.FC = () => {
   const { cameras, isLoadingCameras } = useSystem();
@@ -118,18 +129,31 @@ const CameraManagement: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* CCTV Feed Preview */}
+                  {/* Live Feed Preview */}
                   <div
                     className="camera-preview-container"
                     onClick={() => setExpandedCamera(expandedCamera?.id === camera.id ? null : camera)}
-                    style={{ cursor: 'pointer' }}
                     title="Click to expand"
                   >
-                    <CctvFeed
-                      cameraId={camera.id}
-                      location={camera.location}
-                      status={camera.status}
-                    />
+                    {camera.status === 'online' && CAM_VIDEO_IDS[camera.id] ? (
+                      <iframe
+                        className="camera-preview-video"
+                        src={EMBED(CAM_VIDEO_IDS[camera.id])}
+                        loading="lazy"
+                        allow="autoplay; encrypted-media"
+                        allowFullScreen
+                      />
+                    ) : camera.status === 'online' ? (
+                      <div className="camera-preview-placeholder">
+                        <span className="material-symbols-outlined">live_tv</span>
+                        <span className="preview-text">Live Stream</span>
+                      </div>
+                    ) : (
+                      <div className="camera-preview-placeholder offline">
+                        <span className="material-symbols-outlined">videocam_off</span>
+                        <span className="preview-text">Offline</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="camera-item-body">
@@ -181,11 +205,19 @@ const CameraManagement: React.FC = () => {
               </button>
             </div>
             <div className="cctv-modal-feed">
-              <CctvFeed
-                cameraId={expandedCamera.id}
-                location={expandedCamera.location}
-                status={expandedCamera.status}
-              />
+              {CAM_VIDEO_IDS[expandedCamera.id] ? (
+                <iframe
+                  src={EMBED(CAM_VIDEO_IDS[expandedCamera.id])}
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                  style={{ position: 'absolute', top: '-10%', left: '-2px', width: 'calc(100% + 4px)', height: '120%', border: 'none' }}
+                />
+              ) : (
+                <div className="camera-preview-placeholder" style={{ position: 'absolute', inset: 0 }}>
+                  <span className="material-symbols-outlined">live_tv</span>
+                  <span className="preview-text">No stream available</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

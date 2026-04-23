@@ -1,39 +1,61 @@
 import React, { useState } from 'react';
 import Sidebar from '../../components/common/Sidebar';
-import CctvFeed from '../../components/common/CctvFeed';
 import './CamerasScreen.css';
 
 interface Camera {
   id: string;
   name: string;
   location: string;
+  videoId: string;
   status: 'online' | 'offline' | 'degraded';
 }
 
 const DEFAULT_CAMERAS: Camera[] = [
-  { id: 'CAM-001', name: 'Camera 01', location: 'Al-Madinah Road — North Junction', status: 'online' },
-  { id: 'CAM-002', name: 'Camera 02', location: 'King Fahd Road — Central', status: 'online' },
-  { id: 'CAM-003', name: 'Camera 03', location: 'Northern Ring Road — Exit 7', status: 'online' },
-  { id: 'CAM-004', name: 'Camera 04', location: 'Eastern Ring Road — Km 14', status: 'online' },
-  { id: 'CAM-005', name: 'Camera 05', location: 'Highway 65 — South Gate', status: 'online' },
-  { id: 'CAM-006', name: 'Camera 06', location: 'Al-Uruba Road — Intersection', status: 'online' },
+  { id: 'CAM-001', name: 'Camera 01', location: 'Al-Madinah Road — North Junction', videoId: 'butK9aqBY1E', status: 'online' },
+  { id: 'CAM-002', name: 'Camera 02', location: 'King Fahd Road — Central',          videoId: 'IVa59mpPJTg', status: 'online' },
+  { id: 'CAM-003', name: 'Camera 03', location: 'Northern Ring Road — Exit 7',        videoId: 'x396CVeU74Q', status: 'online' },
+  { id: 'CAM-004', name: 'Camera 04', location: 'Eastern Ring Road — Km 14',          videoId: 'Sd9ZD8Vt8tQ', status: 'online' },
+  { id: 'CAM-005', name: 'Camera 05', location: 'Highway 65 — South Gate',            videoId: 'KpZ8vteYNOw', status: 'online' },
+  { id: 'CAM-006', name: 'Camera 06', location: 'Al-Uruba Road — Intersection',       videoId: 'OElMxy6wYxY', status: 'online' },
 ];
+
+const EMBED = (id: string) =>
+  `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1&loop=1&playlist=${id}`;
+
+const extractVideoId = (input: string): string => {
+  if (/^[a-zA-Z0-9_-]{11}$/.test(input.trim())) return input.trim();
+  try {
+    const url = new URL(input.trim());
+    if (url.hostname === 'youtu.be') return url.pathname.slice(1).split('?')[0];
+    const v = url.searchParams.get('v');
+    if (v) return v;
+    const segs = url.pathname.split('/').filter(Boolean);
+    return segs[segs.length - 1].split('?')[0];
+  } catch {
+    return input.trim();
+  }
+};
 
 const CamerasScreen: React.FC = () => {
   const [cameras, setCameras] = useState<Camera[]>(DEFAULT_CAMERAS);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: '', location: '' });
+  const [form, setForm] = useState({ name: '', location: '', url: '' });
   const [formError, setFormError] = useState('');
 
   const expandedCamera = cameras.find(c => c.id === expanded);
-  const onlineCameras = cameras.filter(c => c.status === 'online');
-  const offlineCameras = cameras.filter(c => c.status === 'offline');
+  const onlineCameras  = cameras.filter(c => c.status === 'online');
+  const offlineCameras = cameras.filter(c => c.status !== 'online');
 
   const handleAddCamera = () => {
     setFormError('');
-    if (!form.name.trim() || !form.location.trim()) {
+    if (!form.name.trim() || !form.location.trim() || !form.url.trim()) {
       setFormError('All fields are required.');
+      return;
+    }
+    const videoId = extractVideoId(form.url);
+    if (!videoId || videoId.length < 5) {
+      setFormError('Could not extract a valid YouTube video ID from that URL.');
       return;
     }
     const nextNum = cameras.length + 1;
@@ -41,9 +63,10 @@ const CamerasScreen: React.FC = () => {
       id: `CAM-${String(nextNum).padStart(3, '0')}`,
       name: form.name.trim(),
       location: form.location.trim(),
+      videoId,
       status: 'online',
     }]);
-    setForm({ name: '', location: '' });
+    setForm({ name: '', location: '', url: '' });
     setShowModal(false);
   };
 
@@ -91,23 +114,18 @@ const CamerasScreen: React.FC = () => {
               <div className="modal-body">
                 <div className="form-group">
                   <label className="form-label">Camera Name</label>
-                  <input
-                    className="form-input"
-                    type="text"
-                    placeholder="e.g. Camera 07"
-                    value={form.name}
-                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  />
+                  <input className="form-input" type="text" placeholder="e.g. Camera 07"
+                    value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Location</label>
-                  <input
-                    className="form-input"
-                    type="text"
-                    placeholder="e.g. King Abdullah Road — Exit 3"
-                    value={form.location}
-                    onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
-                  />
+                  <input className="form-input" type="text" placeholder="e.g. King Abdullah Road — Exit 3"
+                    value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">YouTube URL or Video ID</label>
+                  <input className="form-input" type="text" placeholder="https://youtube.com/watch?v=... or video ID"
+                    value={form.url} onChange={e => setForm(f => ({ ...f, url: e.target.value }))} />
                 </div>
                 {formError && <p className="form-error">{formError}</p>}
               </div>
@@ -137,10 +155,11 @@ const CamerasScreen: React.FC = () => {
               </button>
             </div>
             <div className="expanded-embed">
-              <CctvFeed
-                cameraId={expandedCamera.id}
-                location={expandedCamera.location}
-                status={expandedCamera.status}
+              <iframe
+                src={EMBED(expandedCamera.videoId)}
+                title={expandedCamera.name}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
               />
             </div>
           </div>
@@ -149,44 +168,46 @@ const CamerasScreen: React.FC = () => {
         {/* Camera grid */}
         <div className={`cameras-grid ${expanded ? 'cameras-grid-mini' : ''}`}>
           {cameras.map(camera => (
-            <div
-              key={camera.id}
+            <div key={camera.id}
               className={`camera-card glass-panel ${expanded === camera.id ? 'card-active' : ''}`}
             >
               <div className="camera-card-header">
                 <div className="camera-meta">
                   <span className="cam-id">{camera.id}</span>
-                  <span className={`cam-status-badge ${camera.status}`}>
+                  <span className={`cam-status-badge ${camera.status === 'online' ? 'online' : 'offline'}`}>
                     <span className="status-dot" />
                     {camera.status === 'online' ? 'Live' : 'Offline'}
                   </span>
                 </div>
                 <div className="card-actions">
-                  <button
-                    className="expand-btn"
+                  <button className="expand-btn"
                     onClick={() => setExpanded(expanded === camera.id ? null : camera.id)}
-                    title="Expand"
-                  >
+                    title="Expand">
                     <span className="material-symbols-outlined">
                       {expanded === camera.id ? 'close_fullscreen' : 'open_in_full'}
                     </span>
                   </button>
-                  <button
-                    className="remove-btn"
-                    onClick={() => handleRemoveCamera(camera.id)}
-                    title="Remove camera"
-                  >
+                  <button className="remove-btn" onClick={() => handleRemoveCamera(camera.id)} title="Remove">
                     <span className="material-symbols-outlined">delete</span>
                   </button>
                 </div>
               </div>
 
               <div className="camera-embed">
-                <CctvFeed
-                  cameraId={camera.id}
-                  location={camera.location}
-                  status={camera.status}
-                />
+                {camera.status === 'online' ? (
+                  <iframe
+                    src={EMBED(camera.videoId)}
+                    title={camera.name}
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  <div className="offline-placeholder">
+                    <span className="material-symbols-outlined">videocam_off</span>
+                    <p>Feed unavailable</p>
+                  </div>
+                )}
               </div>
 
               <div className="camera-card-footer">
