@@ -79,23 +79,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (session?.user) {
-        // Use cached role from localStorage for an instant redirect, then verify from DB
-        const cachedRole = (localStorage.getItem('er_user_role') as 'admin' | 'responder') ?? 'responder'
-        setUser({
-          id: session.user.id,
-          email: session.user.email ?? '',
-          name: session.user.email ?? '',
-          role: cachedRole,
-        })
-        setLoading(false)
+        const cachedRole = localStorage.getItem('er_user_role') as 'admin' | 'responder' | null
 
-        // Verify real role from DB and update if different
-        fetchProfile(session.user.id).then((profile) => {
+        if (cachedRole) {
+          // Returning user — redirect instantly using cached role, verify in background
+          setUser({
+            id: session.user.id,
+            email: session.user.email ?? '',
+            name: session.user.email ?? '',
+            role: cachedRole,
+          })
+          setLoading(false)
+          fetchProfile(session.user.id).then((profile) => {
+            if (profile) {
+              localStorage.setItem('er_user_role', profile.role)
+              setUser(profile)
+            }
+          })
+        } else {
+          // First login — wait for real role before redirecting (one-time cost)
+          const profile = await fetchProfile(session.user.id)
           if (profile) {
             localStorage.setItem('er_user_role', profile.role)
             setUser(profile)
+          } else {
+            setUser(null)
           }
-        })
+          setLoading(false)
+        }
       } else {
         setUser(null)
         setLoading(false)
