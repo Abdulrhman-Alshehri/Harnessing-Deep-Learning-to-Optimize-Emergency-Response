@@ -79,15 +79,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (session?.user) {
-        // Fetch full profile (name, role, agency) before unblocking routing
-        const profile = await fetchProfile(session.user.id)
-        if (profile) {
-          setUser(profile)
-        } else {
-          // Fallback if profile row is missing — stay on login
-          setUser(null)
-        }
+        // Use cached role from localStorage for an instant redirect, then verify from DB
+        const cachedRole = (localStorage.getItem('er_user_role') as 'admin' | 'responder') ?? 'responder'
+        setUser({
+          id: session.user.id,
+          email: session.user.email ?? '',
+          name: session.user.email ?? '',
+          role: cachedRole,
+        })
         setLoading(false)
+
+        // Verify real role from DB and update if different
+        fetchProfile(session.user.id).then((profile) => {
+          if (profile) {
+            localStorage.setItem('er_user_role', profile.role)
+            setUser(profile)
+          }
+        })
       } else {
         setUser(null)
         setLoading(false)
@@ -112,6 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   const logout = async () => {
+    localStorage.removeItem('er_user_role')
     await supabase.auth.signOut()
     setUser(null)
   }
