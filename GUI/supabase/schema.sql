@@ -1,195 +1,121 @@
--- ============================================================
--- Emergency Response Platform — Supabase Schema
--- Run this in: Supabase Dashboard > SQL Editor
--- ============================================================
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
 
--- ─────────────────────────────────────────
--- PROFILES (extends auth.users)
--- ─────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id            UUID PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
-  email         TEXT NOT NULL,
-  name          TEXT NOT NULL,
-  role          TEXT NOT NULL CHECK (role IN ('admin', 'responder')),
-  agency        TEXT,
-  agency_type   TEXT CHECK (agency_type IN ('Hospital', 'Police', 'Civil Defense', 'Najm')),
-  status        TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'disabled')),
-  contact_number TEXT,
-  last_login    TIMESTAMPTZ,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.action_logs (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  incident_id text NOT NULL,
+  timestamp timestamp with time zone NOT NULL,
+  user_name text NOT NULL,
+  action text NOT NULL,
+  ip_address text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  user_id uuid,
+  CONSTRAINT action_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT action_logs_incident_id_fkey FOREIGN KEY (incident_id) REFERENCES public.incidents(id),
+  CONSTRAINT action_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
-
--- Auto-create a profile row whenever a new auth user signs up
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  INSERT INTO public.profiles (id, email, name, role)
-  VALUES (
-    NEW.id,
-    NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'name', NEW.email),
-    COALESCE(NEW.raw_user_meta_data->>'role', 'responder')
-  );
-  RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
--- ─────────────────────────────────────────
--- CAMERAS
--- ─────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.cameras (
-  id          TEXT PRIMARY KEY,
-  name        TEXT NOT NULL,
-  location    TEXT NOT NULL,
-  stream_url  TEXT NOT NULL,
-  status      TEXT NOT NULL DEFAULT 'online' CHECK (status IN ('online', 'offline', 'degraded')),
-  lat         DOUBLE PRECISION NOT NULL,
-  lng         DOUBLE PRECISION NOT NULL,
-  protocol    TEXT CHECK (protocol IN ('rtsp', 'http', 'https')),
-  username    TEXT,
-  port        INTEGER,
-  path        TEXT,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.audit_logs (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  timestamp timestamp with time zone NOT NULL,
+  user_id uuid,
+  user_name text NOT NULL,
+  ip_address text,
+  action text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  entity_type text,
+  entity_id text,
+  CONSTRAINT audit_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT audit_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
-
--- ─────────────────────────────────────────
--- INCIDENTS
--- ─────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.incidents (
-  id                   TEXT PRIMARY KEY,
-  case_id              TEXT NOT NULL UNIQUE,
-  location             TEXT NOT NULL,
-  lat                  DOUBLE PRECISION NOT NULL,
-  lng                  DOUBLE PRECISION NOT NULL,
-  time                 TIMESTAMPTZ NOT NULL,
-  severity             TEXT NOT NULL CHECK (severity IN ('high', 'moderate', 'low')),
-  status               TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'acknowledged', 'on_scene', 'scene_cleared', 'closed')),
-  ai_summary           TEXT NOT NULL,
-  agency_specific_info TEXT,
-  estimated_injuries   INTEGER,
-  confidence           TEXT NOT NULL CHECK (confidence IN ('low', 'medium', 'high')),
-  weather              JSONB,
-  traffic              TEXT,
-  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.cameras (
+  id text NOT NULL,
+  name text NOT NULL,
+  location text NOT NULL,
+  stream_url text NOT NULL,
+  status text NOT NULL DEFAULT 'online'::text CHECK (status = ANY (ARRAY['online'::text, 'offline'::text, 'degraded'::text])),
+  lat double precision NOT NULL,
+  lng double precision NOT NULL,
+  protocol text CHECK (protocol = ANY (ARRAY['rtsp'::text, 'http'::text, 'https'::text])),
+  username text,
+  port integer,
+  path text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  added_by_user_id uuid,
+  CONSTRAINT cameras_pkey PRIMARY KEY (id),
+  CONSTRAINT cameras_added_by_user_id_fkey FOREIGN KEY (added_by_user_id) REFERENCES auth.users(id)
 );
-
--- ─────────────────────────────────────────
--- INCIDENT PHOTOS
--- ─────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.incident_photos (
-  id          TEXT PRIMARY KEY,
-  incident_id TEXT NOT NULL REFERENCES public.incidents (id) ON DELETE CASCADE,
-  uri         TEXT NOT NULL,
-  timestamp   TIMESTAMPTZ NOT NULL,
-  verified    BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.collaboration_messages (
+  id text NOT NULL DEFAULT (gen_random_uuid())::text,
+  incident_id text NOT NULL,
+  timestamp timestamp with time zone NOT NULL,
+  user_name text NOT NULL,
+  agency text NOT NULL,
+  message text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  user_id uuid,
+  CONSTRAINT collaboration_messages_pkey PRIMARY KEY (id),
+  CONSTRAINT collaboration_messages_incident_id_fkey FOREIGN KEY (incident_id) REFERENCES public.incidents(id),
+  CONSTRAINT collaboration_messages_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
-
--- ─────────────────────────────────────────
--- ACTION LOGS
--- ─────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.action_logs (
-  id          TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
-  incident_id TEXT NOT NULL REFERENCES public.incidents (id) ON DELETE CASCADE,
-  timestamp   TIMESTAMPTZ NOT NULL,
-  user_name   TEXT NOT NULL,
-  action      TEXT NOT NULL,
-  ip_address  TEXT,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.dispatched_units (
+  id text NOT NULL,
+  incident_id text NOT NULL,
+  name text NOT NULL,
+  agency text NOT NULL,
+  status text NOT NULL CHECK (status = ANY (ARRAY['dispatched'::text, 'en_route'::text, 'on_scene'::text, 'cleared'::text])),
+  dispatched_at timestamp with time zone NOT NULL,
+  on_scene_at timestamp with time zone,
+  cleared_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT dispatched_units_pkey PRIMARY KEY (id),
+  CONSTRAINT dispatched_units_incident_id_fkey FOREIGN KEY (incident_id) REFERENCES public.incidents(id)
 );
-
--- ─────────────────────────────────────────
--- DISPATCHED UNITS
--- ─────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.dispatched_units (
-  id          TEXT PRIMARY KEY,
-  incident_id TEXT NOT NULL REFERENCES public.incidents (id) ON DELETE CASCADE,
-  name        TEXT NOT NULL,
-  agency      TEXT NOT NULL,
-  status      TEXT NOT NULL CHECK (status IN ('dispatched', 'en_route', 'on_scene', 'cleared')),
-  dispatched_at TIMESTAMPTZ NOT NULL,
-  on_scene_at   TIMESTAMPTZ,
-  cleared_at    TIMESTAMPTZ,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.incident_photos (
+  id text NOT NULL,
+  incident_id text NOT NULL,
+  uri text NOT NULL,
+  timestamp timestamp with time zone NOT NULL,
+  verified boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT incident_photos_pkey PRIMARY KEY (id),
+  CONSTRAINT incident_photos_incident_id_fkey FOREIGN KEY (incident_id) REFERENCES public.incidents(id)
 );
-
--- ─────────────────────────────────────────
--- COLLABORATION MESSAGES
--- ─────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.collaboration_messages (
-  id          TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
-  incident_id TEXT NOT NULL REFERENCES public.incidents (id) ON DELETE CASCADE,
-  timestamp   TIMESTAMPTZ NOT NULL,
-  user_name   TEXT NOT NULL,
-  agency      TEXT NOT NULL,
-  message     TEXT NOT NULL,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.incidents (
+  id text NOT NULL,
+  case_id text NOT NULL UNIQUE,
+  location text NOT NULL,
+  lat double precision NOT NULL,
+  lng double precision NOT NULL,
+  time timestamp with time zone NOT NULL,
+  severity text NOT NULL CHECK (severity = ANY (ARRAY['high'::text, 'moderate'::text, 'low'::text])),
+  status text NOT NULL DEFAULT 'new'::text CHECK (status = ANY (ARRAY['new'::text, 'acknowledged'::text, 'on_scene'::text, 'scene_cleared'::text, 'closed'::text])),
+  ai_summary text NOT NULL,
+  agency_specific_info text,
+  estimated_injuries integer,
+  confidence text NOT NULL CHECK (confidence = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text])),
+  weather jsonb,
+  traffic text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  camera_id text,
+  assigned_to_user_id uuid,
+  llm_hospital text,
+  llm_police text,
+  llm_najm text,
+  CONSTRAINT incidents_pkey PRIMARY KEY (id),
+  CONSTRAINT incidents_camera_id_fkey FOREIGN KEY (camera_id) REFERENCES public.cameras(id),
+  CONSTRAINT incidents_assigned_to_user_id_fkey FOREIGN KEY (assigned_to_user_id) REFERENCES auth.users(id)
 );
-
--- ─────────────────────────────────────────
--- AUDIT LOGS
--- ─────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.audit_logs (
-  id         TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
-  timestamp  TIMESTAMPTZ NOT NULL,
-  user_id    UUID REFERENCES auth.users (id) ON DELETE SET NULL,
-  user_name  TEXT NOT NULL,
-  ip_address TEXT,
-  action     TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- ─────────────────────────────────────────
--- ROW LEVEL SECURITY
--- ─────────────────────────────────────────
-ALTER TABLE public.profiles              ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.cameras               ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.incidents             ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.incident_photos       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.action_logs           ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.dispatched_units      ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.collaboration_messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.audit_logs            ENABLE ROW LEVEL SECURITY;
-
--- Authenticated users can read everything
-CREATE POLICY "Authenticated read profiles"              ON public.profiles              FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated read cameras"               ON public.cameras               FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated read incidents"             ON public.incidents             FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated read incident_photos"       ON public.incident_photos       FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated read action_logs"           ON public.action_logs           FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated read dispatched_units"      ON public.dispatched_units      FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated read collaboration_messages" ON public.collaboration_messages FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated read audit_logs"            ON public.audit_logs            FOR SELECT USING (auth.role() = 'authenticated');
-
--- Authenticated users can insert action logs, collaboration messages
-CREATE POLICY "Authenticated insert action_logs"           ON public.action_logs           FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated insert collaboration_messages" ON public.collaboration_messages FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
--- Authenticated users can update incidents (status changes, acknowledge)
-CREATE POLICY "Authenticated update incidents" ON public.incidents FOR UPDATE USING (auth.role() = 'authenticated');
-
--- Only admins can insert/update cameras
-CREATE POLICY "Admin manage cameras insert" ON public.cameras FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
-);
-CREATE POLICY "Admin manage cameras update" ON public.cameras FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
-);
-CREATE POLICY "Admin manage cameras delete" ON public.cameras FOR DELETE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
-);
-
--- Only admins can manage profiles
-CREATE POLICY "Admin manage profiles" ON public.profiles FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
-);
-
--- Admins can insert audit logs
-CREATE POLICY "Admin insert audit_logs" ON public.audit_logs FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  email text NOT NULL,
+  name text NOT NULL,
+  role text NOT NULL CHECK (role = ANY (ARRAY['admin'::text, 'responder'::text])),
+  agency text,
+  agency_type text CHECK (agency_type = ANY (ARRAY['Hospital'::text, 'Police'::text, 'Civil Defense'::text, 'Najm'::text])),
+  status text NOT NULL DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'disabled'::text])),
+  contact_number text,
+  last_login timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );
