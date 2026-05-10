@@ -1,78 +1,110 @@
 import React, { useState } from 'react';
 import Sidebar from '../../components/common/Sidebar';
+import { useSystem } from '../../context/SystemContext';
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../services/supabase';
 import './CamerasScreen.css';
 
-interface Camera {
-  id: string;
-  name: string;
-  location: string;
-  videoId: string;
-  status: 'online' | 'offline' | 'degraded';
-}
-
-const DEFAULT_CAMERAS: Camera[] = [
-  { id: 'CAM-001', name: 'Camera 01', location: 'Al-Madinah Road — North Junction', videoId: 'butK9aqBY1E', status: 'online' },
-  { id: 'CAM-002', name: 'Camera 02', location: 'King Fahd Road — Central',          videoId: 'IVa59mpPJTg', status: 'online' },
-  { id: 'CAM-003', name: 'Camera 03', location: 'Northern Ring Road — Exit 7',        videoId: 'x396CVeU74Q', status: 'online' },
-  { id: 'CAM-004', name: 'Camera 04', location: 'Eastern Ring Road — Km 14',          videoId: 'Sd9ZD8Vt8tQ', status: 'online' },
-  { id: 'CAM-005', name: 'Camera 05', location: 'Highway 65 — South Gate',            videoId: 'KpZ8vteYNOw', status: 'online' },
-  { id: 'CAM-006', name: 'Camera 06', location: 'Al-Uruba Road — Intersection',       videoId: 'OElMxy6wYxY', status: 'online' },
-];
-
-const EMBED = (id: string) =>
-  `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1&loop=1&playlist=${id}`;
-
-const extractVideoId = (input: string): string => {
-  if (/^[a-zA-Z0-9_-]{11}$/.test(input.trim())) return input.trim();
+const extractVideoId = (input: string): string | null => {
+  const trimmed = input.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
   try {
-    const url = new URL(input.trim());
+    const url = new URL(trimmed);
     if (url.hostname === 'youtu.be') return url.pathname.slice(1).split('?')[0];
     const v = url.searchParams.get('v');
     if (v) return v;
     const segs = url.pathname.split('/').filter(Boolean);
-    return segs[segs.length - 1].split('?')[0];
+    return segs[segs.length - 1].split('?')[0] || null;
   } catch {
-    return input.trim();
+    return null;
   }
 };
 
+const embedUrl = (videoId: string) =>
+  `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1&loop=1&playlist=${videoId}`;
+
 const CamerasScreen: React.FC = () => {
-  const [cameras, setCameras] = useState<Camera[]>(DEFAULT_CAMERAS);
+  const { cameras, refreshCameras, isLoadingCameras } = useSystem();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: '', location: '', url: '' });
   const [formError, setFormError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const expandedCamera = cameras.find(c => c.id === expanded);
   const onlineCameras  = cameras.filter(c => c.status === 'online');
   const offlineCameras = cameras.filter(c => c.status !== 'online');
 
-  const handleAddCamera = () => {
+  const handleAddCamera = async () => {
     setFormError('');
     if (!form.name.trim() || !form.location.trim() || !form.url.trim()) {
       setFormError('All fields are required.');
       return;
     }
     const videoId = extractVideoId(form.url);
-    if (!videoId || videoId.length < 5) {
+    if (!videoId) {
       setFormError('Could not extract a valid YouTube video ID from that URL.');
       return;
     }
-    const nextNum = cameras.length + 1;
-    setCameras(prev => [...prev, {
-      id: `CAM-${String(nextNum).padStart(3, '0')}`,
+    setIsSaving(true);
+    const newId = `CAM-${String(cameras.length + 1).padStart(3, '0')}-USR`;
+    const { error } = await supabase.from('cameras').insert({
+      id: newId,
       name: form.name.trim(),
       location: form.location.trim(),
-      videoId,
+      stream_url: videoId,
       status: 'online',
-    }]);
+      lat: 0,
+      lng: 0,
+    });
+    setIsSaving(false);
+    if (error) {
+      setFormError(error.message);
+      return;
+    }
+    await refreshCameras();
     setForm({ name: '', location: '', url: '' });
     setShowModal(false);
   };
 
-  const handleRemoveCamera = (id: string) => {
-    setCameras(prev => prev.filter(c => c.id !== id));
-    if (expanded === id) setExpanded(null);
+  const handleRemoveCamera = async (id: string) => {
+    const { error } = await supabase.from('cameras').delete().eq('id', id);
+    if (!error) {
+      if (expanded === id) setExpanded(null);
+      await refreshCameras();
+    }
+  };
+
+  const renderFeed = (streamUrl: string, name: string, status: string) => {
+    if (status !== 'online') {
+      return (
+        <div className="offline-placeholder">
+          <span className="material-symbols-outlined">videocam_off</span>
+          <p>Feed unavailable</p>
+        </div>
+      );
+    }
+    const videoId = extractVideoId(streamUrl);
+    if (videoId) {
+      return (
+        <iframe
+          src={embedUrl(videoId)}
+          title={name}
+          loading="lazy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      );
+    }
+    return (
+      <div className="offline-placeholder">
+        <span className="material-symbols-outlined">info</span>
+        <p>This live stream recording is not available.</p>
+      </div>
+    );
   };
 
   return (
@@ -94,12 +126,21 @@ const CamerasScreen: React.FC = () => {
               <span className="status-dot offline-dot" />
               {offlineCameras.length} Offline
             </span>
-            <button className="add-camera-btn" onClick={() => setShowModal(true)}>
-              <span className="material-symbols-outlined">add</span>
-              Add Camera
-            </button>
+            {isAdmin && (
+              <button className="add-camera-btn" onClick={() => setShowModal(true)}>
+                <span className="material-symbols-outlined">add</span>
+                Add Camera
+              </button>
+            )}
           </div>
         </header>
+
+        {isLoadingCameras && cameras.length === 0 && (
+          <div className="cameras-loading">
+            <span className="material-symbols-outlined spinning">sync</span>
+            Loading cameras...
+          </div>
+        )}
 
         {/* Add Camera Modal */}
         {showModal && (
@@ -131,9 +172,9 @@ const CamerasScreen: React.FC = () => {
               </div>
               <div className="modal-footer">
                 <button className="btn-cancel" onClick={() => setShowModal(false)}>Cancel</button>
-                <button className="btn-confirm" onClick={handleAddCamera}>
+                <button className="btn-confirm" onClick={handleAddCamera} disabled={isSaving}>
                   <span className="material-symbols-outlined">videocam</span>
-                  Add Camera
+                  {isSaving ? 'Saving...' : 'Add Camera'}
                 </button>
               </div>
             </div>
@@ -155,12 +196,7 @@ const CamerasScreen: React.FC = () => {
               </button>
             </div>
             <div className="expanded-embed">
-              <iframe
-                src={EMBED(expandedCamera.videoId)}
-                title={expandedCamera.name}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+              {renderFeed(expandedCamera.streamUrl, expandedCamera.name, expandedCamera.status)}
             </div>
           </div>
         )}
@@ -187,27 +223,16 @@ const CamerasScreen: React.FC = () => {
                       {expanded === camera.id ? 'close_fullscreen' : 'open_in_full'}
                     </span>
                   </button>
-                  <button className="remove-btn" onClick={() => handleRemoveCamera(camera.id)} title="Remove">
-                    <span className="material-symbols-outlined">delete</span>
-                  </button>
+                  {isAdmin && (
+                    <button className="remove-btn" onClick={() => handleRemoveCamera(camera.id)} title="Remove">
+                      <span className="material-symbols-outlined">delete</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
               <div className="camera-embed">
-                {camera.status === 'online' ? (
-                  <iframe
-                    src={EMBED(camera.videoId)}
-                    title={camera.name}
-                    loading="lazy"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                ) : (
-                  <div className="offline-placeholder">
-                    <span className="material-symbols-outlined">videocam_off</span>
-                    <p>Feed unavailable</p>
-                  </div>
-                )}
+                {renderFeed(camera.streamUrl, camera.name, camera.status)}
               </div>
 
               <div className="camera-card-footer">

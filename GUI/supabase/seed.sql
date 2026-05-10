@@ -24,12 +24,14 @@
 -- ─────────────────────────────────────────
 -- CAMERAS
 -- ─────────────────────────────────────────
+-- stream_url stores a YouTube video ID for browser-playable embeds
 INSERT INTO public.cameras (id, name, location, stream_url, status, lat, lng) VALUES
-  ('CAM-001-RUH', 'King Fahd Road @ Olaya Junction',         'King Fahd Road, Olaya District, Riyadh',    'rtsp://camera1.example.com:554/stream', 'online',  24.7136, 46.6753),
-  ('CAM-002-RUH', 'Northern Ring Road @ Exit 7',             'Northern Ring Road, Exit 7, Riyadh',        'rtsp://camera2.example.com:554/stream', 'online',  24.7736, 46.7381),
-  ('CAM-003-RUH', 'King Abdullah Road @ Al Muruj',           'King Abdullah Road, Al Muruj District',     'rtsp://camera3.example.com:554/stream', 'online',  24.6901, 46.6697),
-  ('CAM-004-RUH', 'Eastern Ring Road @ Airport Junction',    'Eastern Ring Road, Near Airport',           'rtsp://camera4.example.com:554/stream', 'offline', 24.7208, 46.8028),
-  ('CAM-005-RUH', 'Makkah Road @ Diplomatic Quarter',        'Makkah Road, Diplomatic Quarter',           'rtsp://camera5.example.com:554/stream', 'online',  24.6913, 46.6182)
+  ('CAM-001-RUH', 'King Fahd Road @ Olaya Junction',         'King Fahd Road, Olaya District, Riyadh',    'butK9aqBY1E', 'online',  24.7136, 46.6753),
+  ('CAM-002-RUH', 'Northern Ring Road @ Exit 7',             'Northern Ring Road, Exit 7, Riyadh',        'IVa59mpPJTg', 'online',  24.7736, 46.7381),
+  ('CAM-003-RUH', 'King Abdullah Road @ Al Muruj',           'King Abdullah Road, Al Muruj District',     'x396CVeU74Q', 'online',  24.6901, 46.6697),
+  ('CAM-004-RUH', 'Eastern Ring Road @ Airport Junction',    'Eastern Ring Road, Near Airport',           'Sd9ZD8Vt8tQ', 'offline', 24.7208, 46.8028),
+  ('CAM-005-RUH', 'Makkah Road @ Diplomatic Quarter',        'Makkah Road, Diplomatic Quarter',           'KpZ8vteYNOw', 'online',  24.6913, 46.6182),
+  ('CAM-006-RUH', 'Al-Uruba Road @ Intersection',            'Al-Uruba Road, Riyadh',                     'OElMxy6wYxY', 'online',  24.7023, 46.6889)
 ON CONFLICT (id) DO NOTHING;
 
 -- ─────────────────────────────────────────
