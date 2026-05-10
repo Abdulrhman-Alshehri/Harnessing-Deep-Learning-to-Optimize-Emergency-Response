@@ -90,7 +90,6 @@ CREATE TABLE public.incidents (
   severity text NOT NULL CHECK (severity = ANY (ARRAY['high'::text, 'moderate'::text, 'low'::text])),
   status text NOT NULL DEFAULT 'new'::text CHECK (status = ANY (ARRAY['new'::text, 'acknowledged'::text, 'on_scene'::text, 'scene_cleared'::text, 'closed'::text])),
   ai_summary text NOT NULL,
-  agency_specific_info text,
   estimated_injuries integer,
   confidence text NOT NULL CHECK (confidence = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text])),
   weather jsonb,

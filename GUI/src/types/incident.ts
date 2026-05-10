@@ -43,7 +43,9 @@ export interface Incident {
   severity: IncidentSeverity
   status: IncidentStatus
   aiSummary: string
-  agencySpecificInfo?: string
+  llmHospital?: string
+  llmPolice?: string
+  llmNajm?: string
   estimatedInjuries?: number
   confidence: ConfidenceLevel
   photos: Photo[]

@@ -225,12 +225,27 @@ const IncidentDetails: React.FC = () => {
                 </div>
 
                 <div className="detail-card glass-panel">
-                  <h3 className="card-title">Agency Specific Info</h3>
-                  {incident.agencySpecificInfo ? (
-                    <p className="summary-text">{incident.agencySpecificInfo}</p>
-                  ) : (
-                    <p className="empty-text">No agency-specific information available.</p>
-                  )}
+                  <h3 className="card-title">Agency Briefings</h3>
+                  <div className="agency-briefings">
+                    <div className="agency-briefing-item">
+                      <span className="agency-briefing-label">Hospital</span>
+                      <p className="summary-text">
+                        {incident.llmHospital ?? 'No hospital briefing available.'}
+                      </p>
+                    </div>
+                    <div className="agency-briefing-item">
+                      <span className="agency-briefing-label">Police</span>
+                      <p className="summary-text">
+                        {incident.llmPolice ?? 'No police briefing available.'}
+                      </p>
+                    </div>
+                    <div className="agency-briefing-item">
+                      <span className="agency-briefing-label">Najm</span>
+                      <p className="summary-text">
+                        {incident.llmNajm ?? 'No Najm briefing available.'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 

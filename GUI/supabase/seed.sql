@@ -35,14 +35,16 @@ ON CONFLICT (id) DO NOTHING;
 -- ─────────────────────────────────────────
 -- INCIDENTS
 -- ─────────────────────────────────────────
-INSERT INTO public.incidents (id, case_id, location, lat, lng, time, severity, status, ai_summary, agency_specific_info, estimated_injuries, confidence, weather, traffic) VALUES
+INSERT INTO public.incidents (id, case_id, location, lat, lng, time, severity, status, ai_summary, llm_hospital, llm_police, llm_najm, estimated_injuries, confidence, weather, traffic) VALUES
 (
   'INC-2024-001', 'ER-20240521-0012',
   'King Fahd Road @ Olaya Junction, Riyadh', 24.7136, 46.6753,
   NOW() - INTERVAL '2 minutes',
   'high', 'new',
   'Multi-vehicle collision involving a commercial truck and two passenger cars. Reports indicate significant front-end damage to one vehicle, with potential for fluid leaks. Emergency services are en route. Traffic is heavily impacted in the southbound lanes.',
-  'Hospital: Report of smoke from one vehicle. Prepare for potential extrication. Police: Southbound King Fahd Road requires immediate traffic control. All lanes blocked.',
+  'Report of smoke from one vehicle. Prepare for potential extrication.',
+  'Southbound King Fahd Road requires immediate traffic control. All lanes blocked.',
+  NULL,
   3, 'high',
   '{"condition": "Clear", "temperature": 38, "visibility": "Good"}',
   'Heavy congestion - 4 lanes blocked'
@@ -53,7 +55,9 @@ INSERT INTO public.incidents (id, case_id, location, lat, lng, time, severity, s
   NOW() - INTERVAL '15 minutes',
   'moderate', 'acknowledged',
   'Single vehicle collision with highway barrier. White sedan appears to have lost control. Driver is conscious and moving. Minor debris on roadway. Right two lanes affected.',
-  'Hospital: Single patient, appears ambulatory. Standard trauma protocol. Police: Traffic control needed for right lanes only.',
+  'Single patient, appears ambulatory. Standard trauma protocol.',
+  'Traffic control needed for right lanes only.',
+  NULL,
   1, 'high',
   '{"condition": "Clear", "temperature": 38, "visibility": "Good"}',
   'Moderate - 2 lanes affected'
@@ -64,7 +68,8 @@ INSERT INTO public.incidents (id, case_id, location, lat, lng, time, severity, s
   NOW() - INTERVAL '45 minutes',
   'low', 'scene_cleared',
   'Minor fender bender between two vehicles. No visible injuries. Drivers exchanging information. Minimal traffic impact.',
-  NULL, 0, 'high',
+  NULL, NULL, NULL,
+  0, 'high',
   '{"condition": "Clear", "temperature": 37, "visibility": "Good"}',
   'Normal flow'
 )

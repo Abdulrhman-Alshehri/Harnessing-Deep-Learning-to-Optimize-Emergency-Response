@@ -81,7 +81,9 @@ export const mockIncidents: Incident[] = [
     severity: 'high',
     status: 'new',
     aiSummary: 'Multi-vehicle collision involving a commercial truck and two passenger cars. Reports indicate significant front-end damage to one vehicle, with potential for fluid leaks. Emergency services are en route. Traffic is heavily impacted in the southbound lanes.',
-    agencySpecificInfo: 'Hospital: Report of smoke from one vehicle. Prepare for potential extrication. Police: Southbound King Fahd Road requires immediate traffic control. All lanes blocked.',
+    llmHospital: 'Report of smoke from one vehicle. Prepare for potential extrication.',
+    llmPolice: 'Southbound King Fahd Road requires immediate traffic control. All lanes blocked.',
+    llmNajm: undefined,
     estimatedInjuries: 3,
     confidence: 'high',
     photos: [
@@ -109,7 +111,9 @@ export const mockIncidents: Incident[] = [
     severity: 'moderate',
     status: 'acknowledged',
     aiSummary: 'Single vehicle collision with highway barrier. White sedan appears to have lost control. Driver is conscious and moving. Minor debris on roadway. Right two lanes affected.',
-    agencySpecificInfo: 'Hospital: Single patient, appears ambulatory. Standard trauma protocol. Police: Traffic control needed for right lanes only.',
+    llmHospital: 'Single patient, appears ambulatory. Standard trauma protocol.',
+    llmPolice: 'Traffic control needed for right lanes only.',
+    llmNajm: undefined,
     estimatedInjuries: 1,
     confidence: 'high',
     photos: [
