@@ -862,6 +862,16 @@
   border-color: #e31c3d;
 }
 
+.btn-dispatch {
+  border-color: rgba(59, 130, 246, 0.55);
+  color: #60a5fa;
+}
+.btn-dispatch:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
 .assign-dialog-overlay {
   position: fixed;
   inset: 0;

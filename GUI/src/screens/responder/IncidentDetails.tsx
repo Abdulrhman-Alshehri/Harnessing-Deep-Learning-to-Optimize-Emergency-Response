@@ -12,6 +12,7 @@ import {
   getValidActions,
   OrchestratorError,
   WorkflowAction,
+  dispatchNearestUnits,
 } from '../../services/incidentOrchestrator';
 import './IncidentDetails.css';
 
@@ -55,6 +56,7 @@ const IncidentDetails: React.FC = () => {
   const [responders, setResponders] = useState<AssignableResponder[]>([]);
   const [selectedAssignee, setSelectedAssignee] = useState<string>('');
   const [assignNote, setAssignNote] = useState('');
+  const [isDispatching, setIsDispatching] = useState(false);
 
   const incident = incidents.find(i => i.id === id);
 
@@ -91,6 +93,45 @@ const IncidentDetails: React.FC = () => {
       showError(e.message || fallback);
     } else {
       showError(fallback);
+    }
+  };
+
+  // Calls the dispatch-units Edge Function: assigns nearest units per agency
+  // and fires a Telegram notification. Telegram failures are surfaced as
+  // a warning toast but do not undo the assignment.
+  const handleDispatchUnits = async () => {
+    if (!incident) return;
+    setIsDispatching(true);
+    try {
+      const result = await dispatchNearestUnits(incident.id);
+
+      if (result.count === 0) {
+        if (result.skipped.length > 0) {
+          showError(
+            `No units dispatched. Skipped: ${result.skipped
+              .map(s => `${s.agency_type} (${s.reason.replace('_', ' ')})`)
+              .join(', ')}`,
+          );
+        } else {
+          showError('No eligible units available.');
+        }
+      } else {
+        const summary = result.dispatched
+          .map(u => `${u.agency_type}: ${u.unit_name} (${u.distance_km} km)`)
+          .join(' · ');
+        showSuccess(`Dispatched ${result.count} unit(s) — ${summary}`);
+
+        if (!result.notification.ok) {
+          showError(
+            `Telegram notification failed: ${result.notification.detail}. ` +
+              `Assignment is recorded.`,
+          );
+        }
+      }
+    } catch (e) {
+      handleOrchestratorError(e, 'Failed to dispatch units.');
+    } finally {
+      setIsDispatching(false);
     }
   };
 
@@ -241,6 +282,27 @@ const IncidentDetails: React.FC = () => {
                   </button>
                 );
               })}
+              {/* Assignment engine: only meaningful once verified and before closure */}
+              {incident.status !== 'new' && incident.status !== 'closed' && (
+                <button
+                  className="btn btn-outline btn-dispatch"
+                  onClick={handleDispatchUnits}
+                  disabled={isDispatching}
+                  title="Auto-assign the nearest active unit per agency and send a Telegram notification"
+                >
+                  {isDispatching ? (
+                    <>
+                      <span className="material-symbols-outlined spinning">sync</span>
+                      Dispatching…
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined">send</span>
+                      Dispatch Nearest Units
+                    </>
+                  )}
+                </button>
+              )}
               <button className="btn btn-secondary" onClick={handleGeneratePDF} disabled={isGeneratingPDF}>
                 {isGeneratingPDF ? (
                   <>

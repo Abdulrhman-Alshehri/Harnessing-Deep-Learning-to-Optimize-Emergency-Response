@@ -260,3 +260,67 @@ export const closeIncident = (incidentId: string, note?: string) =>
 /** Admin-only: abort a false-positive from any non-terminal state. */
 export const abortIncident = (incidentId: string, note: string) =>
   transitionIncident(incidentId, 'closed', { note })
+
+// ---------------------------------------------------------------------------
+//  Assignment engine + Telegram notifier
+// ---------------------------------------------------------------------------
+
+export interface DispatchedUnitResult {
+  agency_type: string
+  unit_id: string
+  dispatched_id: string
+  unit_name: string
+  agency_name: string
+  distance_km: number
+  dispatched_at: string
+}
+
+export interface SkippedAgencyResult {
+  agency_type: string
+  reason: 'already_dispatched' | 'no_active_units' | string
+}
+
+export interface DispatchUnitsResponse {
+  ok: true
+  dispatched: DispatchedUnitResult[]
+  skipped: SkippedAgencyResult[]
+  count: number
+  notification: { channel: string; ok: boolean; detail: string }
+}
+
+/**
+ * Calls the `dispatch-units` Edge Function: assignment engine picks the
+ * nearest active unit per agency type, persists dispatched_units rows,
+ * and sends a Telegram notification. Telegram failures do NOT undo the
+ * assignment — they are surfaced in the response so the UI can warn.
+ */
+export const dispatchNearestUnits = async (
+  incidentId: string,
+  agencyTypes?: string[],
+): Promise<DispatchUnitsResponse> => {
+  const { data, error } = await supabase.functions.invoke<DispatchUnitsResponse>(
+    'dispatch-units',
+    {
+      body: {
+        incident_id: incidentId,
+        ...(agencyTypes ? { agency_types: agencyTypes } : {}),
+      },
+    },
+  )
+
+  if (error) {
+    throw new OrchestratorError(
+      'DISPATCH_FAILED',
+      error.message || 'Edge function invocation failed',
+    )
+  }
+
+  if (!data?.ok) {
+    throw new OrchestratorError(
+      'DISPATCH_FAILED',
+      'Edge function returned no data',
+    )
+  }
+
+  return data
+}
