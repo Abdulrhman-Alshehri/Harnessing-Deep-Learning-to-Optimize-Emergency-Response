@@ -105,10 +105,67 @@
 }
 
 .stat-chip:hover {
-  background: linear-gradient(135deg, rgba(157, 238, 43, 0.15) 0%, rgba(157, 238, 43, 0.08) 100%);
-  border-color: rgba(163, 230, 53, 0.5);
   transform: translateY(-2px);
+}
+
+/* New — red/orange: needs immediate attention */
+.stat-chip-new {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.12) 0%, rgba(249, 115, 22, 0.05) 100%);
+  border-color: rgba(249, 115, 22, 0.35);
+}
+.stat-chip-new:hover {
+  border-color: rgba(249, 115, 22, 0.6);
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.2);
+}
+.stat-chip-new .stat-chip-icon { color: #f97316; }
+.stat-value-new {
+  color: #f97316;
+  filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.4));
+}
+
+/* Acknowledged — blue: confirmed, in progress */
+.stat-chip-acknowledged {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0.05) 100%);
+  border-color: rgba(59, 130, 246, 0.35);
+}
+.stat-chip-acknowledged:hover {
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
+}
+.stat-chip-acknowledged .stat-chip-icon { color: #3b82f6; }
+.stat-value-acknowledged {
+  color: #3b82f6;
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.4));
+}
+
+/* On Scene — green: actively handled */
+.stat-chip-active {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(34, 197, 94, 0.05) 100%);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+.stat-chip-active:hover {
+  border-color: rgba(34, 197, 94, 0.6);
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.2);
+}
+.stat-chip-active .stat-chip-icon { color: #22c55e; }
+.stat-value-active {
+  color: #22c55e;
+  filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.4));
+}
+
+/* Total — primary green */
+.stat-chip-total {
+  background: linear-gradient(135deg, rgba(157, 238, 43, 0.08) 0%, rgba(157, 238, 43, 0.03) 100%);
+  border-color: rgba(163, 230, 53, 0.2);
+}
+.stat-chip-total:hover {
+  border-color: rgba(163, 230, 53, 0.5);
   box-shadow: 0 4px 16px rgba(157, 238, 43, 0.2);
+}
+.stat-chip-total .stat-chip-icon { color: var(--color-primary); }
+
+.stat-chip-icon {
+  font-size: 1.1rem;
 }
 
 .stat-label {
@@ -205,15 +262,34 @@
 }
 
 .incident-card {
-  padding: 1.25rem;
+  padding: 1.25rem 1.25rem 1.25rem 1.625rem;
   background: linear-gradient(135deg, rgba(157, 238, 43, 0.05) 0%, rgba(157, 238, 43, 0.02) 100%);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(163, 230, 53, 0.2);
+  border-left: 4px solid rgba(163, 230, 53, 0.3);
   border-radius: 0.875rem;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
   overflow: hidden;
+}
+
+/* Status-specific left border colours for instant differentiation */
+.incident-card-status-new {
+  border-left-color: #f97316;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.06) 0%, rgba(249, 115, 22, 0.02) 100%);
+}
+.incident-card-status-acknowledged {
+  border-left-color: #3b82f6;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.06) 0%, rgba(59, 130, 246, 0.02) 100%);
+}
+.incident-card-status-on_scene {
+  border-left-color: #22c55e;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.06) 0%, rgba(34, 197, 94, 0.02) 100%);
+}
+.incident-card-status-scene_cleared {
+  border-left-color: #6b7280;
+  background: linear-gradient(135deg, rgba(107, 114, 128, 0.05) 0%, rgba(107, 114, 128, 0.02) 100%);
 }
 
 .incident-card::before {
@@ -245,10 +321,61 @@
 .incident-card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 0.75rem;
   position: relative;
   z-index: 1;
+  gap: 0.5rem;
+}
+
+/* Badge row: status chip + severity badge together */
+.incident-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+/* Inline status chip on the incident card */
+.incident-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.incident-status-chip .material-symbols-outlined {
+  font-size: 0.85rem;
+}
+
+.incident-status-chip-new {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.incident-status-chip-acknowledged {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.incident-status-chip-on_scene {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.incident-status-chip-scene_cleared {
+  background: rgba(107, 114, 128, 0.15);
+  color: #9ca3af;
+  border: 1px solid rgba(107, 114, 128, 0.3);
 }
 
 .incident-id {

@@ -905,27 +905,64 @@
   font-weight: 500;
 }
 
-.assign-dialog-select,
-.assign-dialog-textarea {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+/*
+ * Select contrast fix:
+ *   - Use a solid dark background so the closed control is always readable.
+ *   - Explicitly set color on option elements (works on Firefox; Chrome/Safari
+ *     respect the select's own background-color via color-scheme hint).
+ *   - color-scheme: dark tells the browser to render the native widget in
+ *     dark mode, which fixes white-on-white option lists in Chromium.
+ */
+.assign-dialog-select {
+  background-color: #1a2535;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 8px;
-  color: inherit;
+  color: #f1f5f9;
   padding: 0.625rem 0.75rem;
   font-size: 0.95rem;
   font-family: inherit;
+  width: 100%;
+  cursor: pointer;
+  appearance: auto;
+  color-scheme: dark;
 }
 
-.assign-dialog-select:focus,
-.assign-dialog-textarea:focus {
+.assign-dialog-select option {
+  background-color: #1a2535;
+  color: #f1f5f9;
+}
+
+.assign-dialog-select option:disabled {
+  color: #6b7280;
+}
+
+.assign-dialog-select:focus {
   outline: none;
   border-color: #9dee2b;
   box-shadow: 0 0 0 3px rgba(157, 238, 43, 0.15);
 }
 
 .assign-dialog-textarea {
+  background-color: #1a2535;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: #f1f5f9;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  width: 100%;
   resize: vertical;
   min-height: 60px;
+}
+
+.assign-dialog-textarea::placeholder {
+  color: #6b7280;
+}
+
+.assign-dialog-textarea:focus {
+  outline: none;
+  border-color: #9dee2b;
+  box-shadow: 0 0 0 3px rgba(157, 238, 43, 0.15);
 }
 
 .assign-dialog-actions {

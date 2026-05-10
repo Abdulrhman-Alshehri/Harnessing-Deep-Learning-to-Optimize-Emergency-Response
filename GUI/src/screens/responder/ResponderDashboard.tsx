@@ -53,16 +53,24 @@ const ResponderDashboard: React.FC = () => {
             <p className="dashboard-subtitle">Real-time monitoring and response coordination</p>
           </div>
           <div className="dashboard-stats">
-            <div className="stat-chip">
-              <span className="stat-label">New:</span>
-              <span className="stat-value">{activeIncidents.filter(i => i.status === 'new').length}</span>
+            <div className="stat-chip stat-chip-new">
+              <span className="material-symbols-outlined stat-chip-icon">warning</span>
+              <span className="stat-label">New</span>
+              <span className="stat-value stat-value-new">{activeIncidents.filter(i => i.status === 'new').length}</span>
             </div>
-            <div className="stat-chip">
-              <span className="stat-label">Acknowledged:</span>
-              <span className="stat-value">{activeIncidents.filter(i => i.status === 'acknowledged').length}</span>
+            <div className="stat-chip stat-chip-acknowledged">
+              <span className="material-symbols-outlined stat-chip-icon">check_circle</span>
+              <span className="stat-label">Acknowledged</span>
+              <span className="stat-value stat-value-acknowledged">{activeIncidents.filter(i => i.status === 'acknowledged').length}</span>
             </div>
-            <div className="stat-chip">
-              <span className="stat-label">Total:</span>
+            <div className="stat-chip stat-chip-active">
+              <span className="material-symbols-outlined stat-chip-icon">directions_run</span>
+              <span className="stat-label">On Scene</span>
+              <span className="stat-value stat-value-active">{activeIncidents.filter(i => i.status === 'on_scene').length}</span>
+            </div>
+            <div className="stat-chip stat-chip-total">
+              <span className="material-symbols-outlined stat-chip-icon">list_alt</span>
+              <span className="stat-label">Total Active</span>
               <span className="stat-value">{activeIncidents.length}</span>
             </div>
           </div>
@@ -101,7 +109,7 @@ const ResponderDashboard: React.FC = () => {
               {!loading && !error && activeIncidents.map((incident) => (
                 <div
                   key={incident.id}
-                  className={`incident-card ${selectedIncident === incident.id ? 'selected' : ''}`}
+                  className={`incident-card incident-card-status-${incident.status} ${selectedIncident === incident.id ? 'selected' : ''}`}
                   onClick={() => {
                     setSelectedIncident(incident.id);
                     navigate(`/responder/incident/${incident.id}`);
@@ -109,20 +117,32 @@ const ResponderDashboard: React.FC = () => {
                 >
                   <div className="incident-card-header">
                     <span className="incident-id">{incident.caseId}</span>
-                    <StatusBadge 
-                      label={incident.severity} 
-                      severity={incident.severity === 'high' ? 'critical' : 
-                                incident.severity === 'moderate' ? 'high' : 'medium' as any}
-                    />
+                    <div className="incident-badges">
+                      <span className={`incident-status-chip incident-status-chip-${incident.status}`}>
+                        <span className="material-symbols-outlined">
+                          {incident.status === 'new' ? 'warning' :
+                           incident.status === 'acknowledged' ? 'check_circle' :
+                           incident.status === 'on_scene' ? 'directions_run' : 'task_alt'}
+                        </span>
+                        {incident.status === 'new' ? 'New' :
+                         incident.status === 'acknowledged' ? 'Acknowledged' :
+                         incident.status === 'on_scene' ? 'On Scene' : incident.status.replace('_', ' ')}
+                      </span>
+                      <StatusBadge
+                        label={incident.severity}
+                        severity={incident.severity === 'high' ? 'critical' :
+                                  incident.severity === 'moderate' ? 'high' : 'medium' as any}
+                      />
+                    </div>
                   </div>
-                  
+
                   <div className="incident-location">
                     <span className="material-symbols-outlined">location_on</span>
                     <span>{incident.location.split(',')[0]}</span>
                   </div>
-                  
+
                   <p className="incident-summary">{incident.aiSummary.substring(0, 80)}...</p>
-                  
+
                   <div className="incident-footer">
                     <span className="incident-time">{getTimeAgo(incident.time)}</span>
                     <button className="btn-view" onClick={(e) => {
