@@ -13,8 +13,11 @@ const extractVideoId = (input: string): string | null => {
     if (url.hostname === 'youtu.be') return url.pathname.slice(1).split('?')[0];
     const v = url.searchParams.get('v');
     if (v) return v;
+    // handles /live/ID, /embed/ID, /shorts/ID, /v/ID
     const segs = url.pathname.split('/').filter(Boolean);
-    return segs[segs.length - 1].split('?')[0] || null;
+    const last = segs[segs.length - 1].split('?')[0];
+    if (/^[a-zA-Z0-9_-]{11}$/.test(last)) return last;
+    return null;
   } catch {
     return null;
   }
@@ -50,7 +53,7 @@ const CamerasScreen: React.FC = () => {
       return;
     }
     setIsSaving(true);
-    const newId = `CAM-${String(cameras.length + 1).padStart(3, '0')}-USR`;
+    const newId = `CAM-${Date.now()}-RUH`;
     const { error } = await supabase.from('cameras').insert({
       id: newId,
       name: form.name.trim(),
