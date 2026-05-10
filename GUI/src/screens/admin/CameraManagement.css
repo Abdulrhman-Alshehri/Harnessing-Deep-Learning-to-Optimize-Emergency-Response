@@ -579,3 +579,134 @@
   width: 100%;
   aspect-ratio: 16 / 9;
 }
+
+/* ── Camera Form Modal (Add / Edit / Delete) ─────────────────────────── */
+.cam-form-modal {
+  background: #1a1f2a;
+  border: 1px solid rgba(157, 238, 43, 0.2);
+  border-radius: 1rem;
+  width: 100%;
+  max-width: 480px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.cam-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.cam-form-header h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.cam-form-header button {
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.cam-form-header button:hover { color: #fff; }
+
+.cam-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.cam-form-body label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #9dee2b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cam-form-body input,
+.cam-form-body select {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 0.5rem;
+  color: #fff;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.cam-form-body input:focus,
+.cam-form-body select:focus {
+  border-color: rgba(157, 238, 43, 0.5);
+}
+
+.cam-form-body select option { background: #1a1f2a; }
+
+.cam-form-error {
+  color: #ff5c5c;
+  font-size: 0.82rem;
+  margin: 0;
+}
+
+.cam-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.btn-cancel-form {
+  padding: 0.55rem 1.1rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 0.5rem;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background 0.2s;
+}
+
+.btn-cancel-form:hover { background: rgba(255,255,255,0.1); }
+
+.btn-confirm-form {
+  padding: 0.55rem 1.25rem;
+  background: #9dee2b;
+  border: none;
+  border-radius: 0.5rem;
+  color: #0a0e14;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background 0.2s;
+}
+
+.btn-confirm-form:hover { background: #b4f54a; }
+.btn-confirm-form:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-delete-form {
+  padding: 0.55rem 1.25rem;
+  background: #e53e3e;
+  border: none;
+  border-radius: 0.5rem;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background 0.2s;
+}
+
+.btn-delete-form:hover { background: #fc5a5a; }
+.btn-delete-form:disabled { opacity: 0.5; cursor: not-allowed; }
