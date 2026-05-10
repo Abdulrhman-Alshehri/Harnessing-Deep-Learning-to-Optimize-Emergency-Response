@@ -21,7 +21,7 @@ const extractVideoId = (input: string): string | null => {
 };
 
 const embedUrl = (videoId: string) =>
-  `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1&loop=1&playlist=${videoId}`;
+  `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1&loop=1&playlist=${videoId}&iv_load_policy=3&disablekb=1&fs=0&cc_load_policy=0`;
 
 const CamerasScreen: React.FC = () => {
   const { cameras, refreshCameras, isLoadingCameras } = useSystem();

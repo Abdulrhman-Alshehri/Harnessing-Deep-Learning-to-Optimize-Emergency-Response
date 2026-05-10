@@ -408,7 +408,7 @@
   font-size: 1.1rem;
 }
 
-/* Embed — oversize iframe to clip YouTube UI bars */
+/* Embed — oversize + mask to strip all YouTube branding */
 .camera-embed {
   position: relative;
   width: 100%;
@@ -420,13 +420,26 @@
 
 .camera-embed iframe {
   position: absolute;
-  top: -10%;
+  top: -15%;
   left: -2px;
   width: calc(100% + 4px);
-  height: 120%;
+  height: 130%;
   border: none;
   pointer-events: none;
 }
+
+/* Black bars that cover the top (channel name) and bottom (YouTube logo) */
+.camera-embed::before,
+.camera-embed::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.camera-embed::before { top: 0;    height: 14%; background: #000; }
+.camera-embed::after  { bottom: 0; height: 14%; background: #000; }
 
 .offline-placeholder {
   position: absolute;
@@ -533,13 +546,24 @@
   overflow: hidden;
 }
 
-.expanded-embed iframe,
-.camera-embed iframe {
+.expanded-embed::before,
+.expanded-embed::after {
+  content: '';
   position: absolute;
-  top: -10%;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.expanded-embed::before { top: 0;    height: 14%; background: #000; }
+.expanded-embed::after  { bottom: 0; height: 14%; background: #000; }
+
+.expanded-embed iframe {
+  position: absolute;
+  top: -15%;
   left: -2px;
   width: calc(100% + 4px);
-  height: 120%;
+  height: 130%;
   border: none;
   pointer-events: none;
 }

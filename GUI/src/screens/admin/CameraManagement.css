@@ -280,15 +280,28 @@
 /* Oversize iframe to clip YouTube UI bars */
 .camera-preview-video {
   position: absolute;
-  top: -10%;
+  top: -15%;
   left: -2px;
   width: calc(100% + 4px);
-  height: 120%;
+  height: 130%;
   border: none;
   pointer-events: none;
 }
 
-/* Block any iframe from going fullscreen */
+/* Black mask bars — cover channel name (top) and YouTube logo (bottom) */
+.camera-preview-container::before,
+.camera-preview-container::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.camera-preview-container::before { top: 0;    height: 18%; background: #000; }
+.camera-preview-container::after  { bottom: 0; height: 18%; background: #000; }
+
+/* Block any iframe interaction */
 .camera-preview-container iframe,
 .cctv-modal-feed iframe {
   pointer-events: none;
@@ -576,9 +589,24 @@
 }
 
 .cctv-modal-feed {
+  position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #000;
 }
+
+.cctv-modal-feed::before,
+.cctv-modal-feed::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.cctv-modal-feed::before { top: 0;    height: 12%; background: #000; }
+.cctv-modal-feed::after  { bottom: 0; height: 12%; background: #000; }
 
 /* ── Camera Form Modal (Add / Edit / Delete) ─────────────────────────── */
 .cam-form-modal {
