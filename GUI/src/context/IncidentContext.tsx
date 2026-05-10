@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
-import { Incident } from '../types/incident'
+import { Incident, IncidentStatus } from '../types/incident'
+import {
+  transitionIncident,
+  assignIncident as orchestratorAssign,
+  TransitionPayload,
+  OrchestratorError,
+} from '../services/incidentOrchestrator'
 
 interface IncidentContextType {
   incidents: Incident[]
@@ -9,7 +15,8 @@ interface IncidentContextType {
   error: string | null
   getIncident: (id: string) => Incident | undefined
   acknowledgeIncident: (id: string, userId: string, userName: string) => Promise<void>
-  updateIncidentStatus: (id: string, status: Incident['status']) => Promise<void>
+  updateIncidentStatus: (id: string, status: IncidentStatus, payload?: TransitionPayload) => Promise<void>
+  assignIncident: (id: string, assigneeId: string, note?: string) => Promise<void>
   addCollaborationMessage: (incidentId: string, user: string, agency: string, message: string) => Promise<void>
   refreshIncidents: () => Promise<void>
 }
@@ -139,46 +146,44 @@ export const IncidentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const getIncident = (id: string) => incidents.find((inc) => inc.id === id)
 
-  const acknowledgeIncident = async (id: string, _userId: string, userName: string) => {
-    const { error: updateError } = await supabase
-      .from('incidents')
-      .update({ status: 'acknowledged' })
-      .eq('id', id)
-
-    if (updateError) {
-      console.error('Failed to acknowledge incident:', updateError.message)
-      return
+  // All state-changing actions are routed through the Emergency Event
+  // Orchestrator RPC. Direct table writes against `incidents` are blocked
+  // by RLS for non-admins — see migrations/20260510000000_emergency_event_orchestrator.sql.
+  const acknowledgeIncident = async (id: string, _userId: string, _userName: string) => {
+    try {
+      await transitionIncident(id, 'acknowledged')
+      await refreshIncidents()
+    } catch (e) {
+      const err = e instanceof OrchestratorError ? e : new Error(String(e))
+      console.error('Failed to acknowledge incident:', err.message)
+      throw err
     }
-
-    await supabase.from('action_logs').insert({
-      incident_id: id,
-      timestamp: new Date().toISOString(),
-      user_name: userName,
-      action: `Alert accepted by ${userName}`,
-    })
-
-    await refreshIncidents()
   }
 
-  const updateIncidentStatus = async (id: string, status: Incident['status']) => {
-    const { error: updateError } = await supabase
-      .from('incidents')
-      .update({ status })
-      .eq('id', id)
-
-    if (updateError) {
-      console.error('Failed to update incident status:', updateError.message)
-      return
+  const updateIncidentStatus = async (
+    id: string,
+    status: IncidentStatus,
+    payload: TransitionPayload = {},
+  ) => {
+    try {
+      await transitionIncident(id, status, payload)
+      await refreshIncidents()
+    } catch (e) {
+      const err = e instanceof OrchestratorError ? e : new Error(String(e))
+      console.error('Failed to transition incident:', err.message)
+      throw err
     }
+  }
 
-    await supabase.from('action_logs').insert({
-      incident_id: id,
-      timestamp: new Date().toISOString(),
-      user_name: 'System',
-      action: `Status updated to ${status}`,
-    })
-
-    await refreshIncidents()
+  const assignIncident = async (id: string, assigneeId: string, note?: string) => {
+    try {
+      await orchestratorAssign(id, assigneeId, note)
+      await refreshIncidents()
+    } catch (e) {
+      const err = e instanceof OrchestratorError ? e : new Error(String(e))
+      console.error('Failed to assign incident:', err.message)
+      throw err
+    }
   }
 
   const addCollaborationMessage = async (
@@ -213,6 +218,7 @@ export const IncidentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         getIncident,
         acknowledgeIncident,
         updateIncidentStatus,
+        assignIncident,
         addCollaborationMessage,
         refreshIncidents,
       }}

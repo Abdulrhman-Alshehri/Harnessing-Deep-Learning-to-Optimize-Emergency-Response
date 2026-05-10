@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useIncidents } from '../../context/IncidentContext';
 import { useAuth } from '../../context/AuthContext';
@@ -7,8 +7,21 @@ import { generateIncidentReport } from '../../services/pdfService';
 import Sidebar from '../../components/common/Sidebar';
 import StatusBadge from '../../components/common/StatusBadge';
 import MapView from '../../components/common/MapView';
-import { IncidentStatus } from '../../types/incident';
+import { supabase } from '../../services/supabase';
+import {
+  getValidActions,
+  OrchestratorError,
+  WorkflowAction,
+} from '../../services/incidentOrchestrator';
 import './IncidentDetails.css';
+
+// Lightweight profile shape for the assignee picker. Reads come from
+// `profiles` directly; the actual assignment goes through the RPC.
+interface AssignableResponder {
+  id: string;
+  name: string;
+  agency: string | null;
+}
 
 const UNIT_STATUS_LABEL: Record<string, string> = {
   dispatched: 'Dispatched',
@@ -17,16 +30,69 @@ const UNIT_STATUS_LABEL: Record<string, string> = {
   cleared: 'Cleared',
 };
 
+// Maps OrchestratorError codes -> user-facing copy. Anything we don't
+// recognise falls back to the raw message so admins still see the cause.
+const ORCHESTRATOR_ERROR_COPY: Record<string, string> = {
+  INVALID_TRANSITION: 'That action is not allowed from the current status.',
+  FORBIDDEN: 'Your role is not permitted to take this action.',
+  NOT_FOUND: 'This incident could not be found. It may have been deleted.',
+  NOOP: 'The incident is already in that status.',
+  TERMINAL: 'This incident is already closed and cannot be changed.',
+  INVALID_ASSIGNEE: 'The selected responder is not active.',
+  UNAUTHENTICATED: 'You are not signed in. Please log in again.',
+  NO_PROFILE: 'Your account is missing a profile entry. Contact an admin.',
+};
+
 const IncidentDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { incidents, acknowledgeIncident, updateIncidentStatus } = useIncidents();
+  const { incidents, updateIncidentStatus, assignIncident } = useIncidents();
   const { user } = useAuth();
   const { showSuccess, showError } = useNotification();
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isActing, setIsActing] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [responders, setResponders] = useState<AssignableResponder[]>([]);
+  const [selectedAssignee, setSelectedAssignee] = useState<string>('');
+  const [assignNote, setAssignNote] = useState('');
 
   const incident = incidents.find(i => i.id === id);
+
+  const validActions: WorkflowAction[] = incident && user
+    ? getValidActions(incident, user)
+    : [];
+
+  // Lazy-load the responder picker when the assign dialog opens. Profiles
+  // are public-readable for authenticated users, so this is safe.
+  useEffect(() => {
+    if (!assignDialogOpen || responders.length > 0) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name, agency')
+        .eq('role', 'responder')
+        .eq('status', 'active')
+        .order('name');
+      if (cancelled) return;
+      if (error) {
+        showError('Could not load responders.');
+        return;
+      }
+      setResponders((data ?? []) as AssignableResponder[]);
+    })();
+    return () => { cancelled = true; };
+  }, [assignDialogOpen, responders.length, showError]);
+
+  const handleOrchestratorError = (e: unknown, fallback: string) => {
+    if (e instanceof OrchestratorError) {
+      showError(ORCHESTRATOR_ERROR_COPY[e.code] ?? e.message);
+    } else if (e instanceof Error) {
+      showError(e.message || fallback);
+    } else {
+      showError(fallback);
+    }
+  };
 
   const handleGeneratePDF = () => {
     if (!incident) return;
@@ -41,27 +107,60 @@ const IncidentDetails: React.FC = () => {
     }
   };
 
-  const handleAcknowledge = async () => {
-    if (!incident || !user) return;
+  const handleAction = async (action: WorkflowAction) => {
+    if (!incident) return;
+
+    if (action.requiresAssignee) {
+      setAssignDialogOpen(true);
+      return;
+    }
+
     setIsActing(true);
     try {
-      await acknowledgeIncident(incident.id, user.id, user.name);
-      showSuccess('Incident acknowledged.');
-    } catch {
-      showError('Failed to acknowledge incident.');
+      await updateIncidentStatus(incident.id, action.targetStatus);
+      showSuccess(`${action.label} — ${action.targetStatus.replace('_', ' ')}.`);
+    } catch (e) {
+      handleOrchestratorError(e, `Failed: ${action.label}.`);
     } finally {
       setIsActing(false);
     }
   };
 
-  const handleStatusUpdate = async (status: IncidentStatus) => {
-    if (!incident) return;
+  const handleConfirmAssign = async () => {
+    if (!incident || !selectedAssignee) return;
     setIsActing(true);
     try {
-      await updateIncidentStatus(incident.id, status);
-      showSuccess(`Status updated to ${status.replace('_', ' ')}.`);
-    } catch {
-      showError('Failed to update status.');
+      // Assignment + on_scene transition in a single RPC call: the orchestrator
+      // sets assigned_to_user_id and moves status from acknowledged -> on_scene
+      // atomically.
+      await updateIncidentStatus(incident.id, 'on_scene', {
+        assigneeId: selectedAssignee,
+        note: assignNote.trim() || undefined,
+      });
+      showSuccess('Responder assigned. Incident is now active.');
+      setAssignDialogOpen(false);
+      setSelectedAssignee('');
+      setAssignNote('');
+    } catch (e) {
+      handleOrchestratorError(e, 'Failed to assign responder.');
+    } finally {
+      setIsActing(false);
+    }
+  };
+
+  // Reassignment without status change — only meaningful while the incident
+  // is still active.
+  const handleReassignOnly = async () => {
+    if (!incident || !selectedAssignee) return;
+    setIsActing(true);
+    try {
+      await assignIncident(incident.id, selectedAssignee, assignNote.trim() || undefined);
+      showSuccess('Assignment updated.');
+      setAssignDialogOpen(false);
+      setSelectedAssignee('');
+      setAssignNote('');
+    } catch (e) {
+      handleOrchestratorError(e, 'Failed to update assignment.');
     } finally {
       setIsActing(false);
     }
@@ -82,16 +181,6 @@ const IncidentDetails: React.FC = () => {
       </div>
     );
   }
-
-  const nextStatuses: IncidentStatus[] = (() => {
-    switch (incident.status) {
-      case 'new': return ['acknowledged', 'closed'];
-      case 'acknowledged': return ['on_scene', 'closed'];
-      case 'on_scene': return ['scene_cleared', 'closed'];
-      case 'scene_cleared': return ['closed'];
-      default: return [];
-    }
-  })();
 
   return (
     <div className="incident-details-layout">
@@ -118,22 +207,40 @@ const IncidentDetails: React.FC = () => {
               </p>
             </div>
             <div className="id-actions">
-              {incident.status === 'new' && (
-                <button className="btn btn-primary" onClick={handleAcknowledge} disabled={isActing}>
-                  <span className="material-symbols-outlined">check_circle</span>
-                  Acknowledge
-                </button>
+              {/* Workflow actions — gated by the orchestrator. The UI only
+                  shows what is valid for the current status + role; the
+                  server re-validates and is the source of truth. */}
+              {validActions.length === 0 && (
+                <span className="id-terminal-label">
+                  This incident is closed.
+                </span>
               )}
-              {nextStatuses.filter(s => s !== 'closed' && s !== 'acknowledged').map(status => (
-                <button
-                  key={status}
-                  className="btn btn-outline"
-                  onClick={() => handleStatusUpdate(status)}
-                  disabled={isActing}
-                >
-                  {status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                </button>
-              ))}
+              {validActions.map((action, idx) => {
+                const isPrimary = idx === 0 && !action.destructive;
+                const className = action.destructive
+                  ? 'btn btn-outline btn-danger'
+                  : isPrimary
+                    ? 'btn btn-primary'
+                    : 'btn btn-outline';
+                const icon = action.id === 'verify' ? 'check_circle'
+                  : action.id === 'assign' ? 'person_add'
+                  : action.id === 'mark_on_scene' ? 'directions_run'
+                  : action.id === 'resolve' ? 'task_alt'
+                  : action.id === 'close' ? 'lock'
+                  : 'cancel';
+                return (
+                  <button
+                    key={action.id}
+                    className={className}
+                    onClick={() => handleAction(action)}
+                    disabled={isActing}
+                    title={action.description}
+                  >
+                    <span className="material-symbols-outlined">{icon}</span>
+                    {action.label}
+                  </button>
+                );
+              })}
               <button className="btn btn-secondary" onClick={handleGeneratePDF} disabled={isGeneratingPDF}>
                 {isGeneratingPDF ? (
                   <>
@@ -350,6 +457,81 @@ const IncidentDetails: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Assignment dialog — opened by the Assign / Mark On Scene workflow
+            action. Picks an active responder and routes through the
+            orchestrator RPC, which sets assigned_to_user_id and moves
+            status -> on_scene atomically. */}
+        {assignDialogOpen && incident && (
+          <div className="assign-dialog-overlay" onClick={() => !isActing && setAssignDialogOpen(false)}>
+            <div className="assign-dialog glass-panel" onClick={e => e.stopPropagation()}>
+              <h2 className="assign-dialog-title">
+                <span className="material-symbols-outlined">person_add</span>
+                Assign Responder
+              </h2>
+              <p className="assign-dialog-subtitle">
+                Pick an active responder. They will be set as the assignee and
+                this incident will move into active handling.
+              </p>
+
+              <label className="assign-dialog-label">
+                Responder
+                <select
+                  className="assign-dialog-select"
+                  value={selectedAssignee}
+                  onChange={e => setSelectedAssignee(e.target.value)}
+                  disabled={isActing}
+                >
+                  <option value="">Select a responder…</option>
+                  {responders.map(r => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}{r.agency ? ` — ${r.agency}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="assign-dialog-label">
+                Note (optional)
+                <textarea
+                  className="assign-dialog-textarea"
+                  rows={2}
+                  value={assignNote}
+                  onChange={e => setAssignNote(e.target.value)}
+                  placeholder="e.g. ETA 8 minutes, dispatching unit 211"
+                  disabled={isActing}
+                />
+              </label>
+
+              <div className="assign-dialog-actions">
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setAssignDialogOpen(false)}
+                  disabled={isActing}
+                >
+                  Cancel
+                </button>
+                {incident.status === 'on_scene' && (
+                  <button
+                    className="btn btn-outline"
+                    onClick={handleReassignOnly}
+                    disabled={!selectedAssignee || isActing}
+                    title="Change the assigned responder without changing status"
+                  >
+                    Reassign Only
+                  </button>
+                )}
+                <button
+                  className="btn btn-primary"
+                  onClick={handleConfirmAssign}
+                  disabled={!selectedAssignee || isActing}
+                >
+                  {isActing ? 'Working…' : 'Assign & Mark On Scene'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
