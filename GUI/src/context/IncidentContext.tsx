@@ -4,7 +4,9 @@ import { Incident, IncidentStatus } from '../types/incident'
 import {
   transitionIncident,
   assignIncident as orchestratorAssign,
+  createIncident as orchestratorCreate,
   TransitionPayload,
+  CreateIncidentPayload,
   OrchestratorError,
 } from '../services/incidentOrchestrator'
 
@@ -17,6 +19,7 @@ interface IncidentContextType {
   acknowledgeIncident: (id: string, userId: string, userName: string) => Promise<void>
   updateIncidentStatus: (id: string, status: IncidentStatus, payload?: TransitionPayload) => Promise<void>
   assignIncident: (id: string, assigneeId: string, note?: string) => Promise<void>
+  createIncident: (payload: CreateIncidentPayload) => Promise<void>
   addCollaborationMessage: (incidentId: string, user: string, agency: string, message: string) => Promise<void>
   refreshIncidents: () => Promise<void>
 }
@@ -186,6 +189,17 @@ export const IncidentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }
 
+  const createIncident = async (payload: CreateIncidentPayload) => {
+    try {
+      await orchestratorCreate(payload)
+      await refreshIncidents()
+    } catch (e) {
+      const err = e instanceof OrchestratorError ? e : new Error(String(e))
+      console.error('Failed to create incident:', err.message)
+      throw err
+    }
+  }
+
   const addCollaborationMessage = async (
     incidentId: string,
     user: string,
@@ -219,6 +233,7 @@ export const IncidentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         acknowledgeIncident,
         updateIncidentStatus,
         assignIncident,
+        createIncident,
         addCollaborationMessage,
         refreshIncidents,
       }}

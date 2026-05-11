@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useIncidents } from '../../context/IncidentContext';
 import Sidebar from '../../components/common/Sidebar';
 import StatusBadge from '../../components/common/StatusBadge';
+import CreateIncidentModal from '../../components/responder/CreateIncidentModal';
 import './IncidentArchives.css';
 
 const IncidentArchives: React.FC = () => {
-  const { incidents } = useIncidents();
+  const { incidents, refreshIncidents } = useIncidents();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const filteredIncidents = incidents.filter(incident =>
     incident.caseId.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -24,7 +26,7 @@ const IncidentArchives: React.FC = () => {
           {/* Header */}
           <header className="archives-header">
             <h1 className="archives-title">Incident Reports</h1>
-            <button className="btn-create">
+            <button className="btn-create" onClick={() => setShowCreateModal(true)}>
               <span className="material-symbols-outlined">add</span>
               <span>Create New Report</span>
             </button>
@@ -119,6 +121,16 @@ const IncidentArchives: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {showCreateModal && (
+        <CreateIncidentModal
+          onClose={() => setShowCreateModal(false)}
+          onCreated={async () => {
+            setShowCreateModal(false)
+            await refreshIncidents()
+          }}
+        />
+      )}
     </div>
   );
 };

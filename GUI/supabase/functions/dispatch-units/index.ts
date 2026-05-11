@@ -209,14 +209,36 @@ Deno.serve(async (req: Request) => {
     const message = formatTelegramMessage(result)
     telegram = await sendTelegram(message)
 
-    await supabase
-      .rpc('log_notification_result', {
-        p_incident_id: incidentId,
-        p_channel: 'Telegram',
-        p_success: telegram.ok,
-        p_detail: telegram.detail,
-      })
-      .catch(() => {/* logging failure is non-fatal */})
+    const { error: logError } = await supabase.rpc('log_notification_result', {
+      p_incident_id: incidentId,
+      p_channel: 'Telegram',
+      p_success: telegram.ok,
+      p_detail: telegram.detail,
+    })
+    if (logError) {
+      console.error('[dispatch-units] log_notification_result failed:', logError.message)
+    }
+  }
+
+  // Exception alert: every agency was skipped due to no active units.
+  // Routes to the admin/supervisor group via notify-incident so supervisors
+  // know manual dispatch is required. This fires at most once per UTC hour
+  // per incident (dedup enforced in fire_notification via hour-bucket suffix).
+  const noUnitsAgencies = result.skipped
+    .filter((s) => s.reason === 'no_active_units')
+    .map((s) => s.agency_type)
+
+  if (noUnitsAgencies.length > 0 && result.count === 0) {
+    const hourBucket = new Date().toISOString().slice(0, 13).replace('T', '-')
+    const { error: notifyErr } = await supabase.rpc('fire_notification', {
+      p_incident_id:  incidentId,
+      p_event_type:   'units.none_available',
+      p_extra:        { skipped_agencies: noUnitsAgencies },
+      p_dedup_suffix: hourBucket,
+    })
+    if (notifyErr) {
+      console.error('[dispatch-units] fire_notification(none_available) failed:', notifyErr.message)
+    }
   }
 
   return new Response(

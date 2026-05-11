@@ -262,6 +262,58 @@ export const abortIncident = (incidentId: string, note: string) =>
   transitionIncident(incidentId, 'closed', { note })
 
 // ---------------------------------------------------------------------------
+//  Manual incident creation
+// ---------------------------------------------------------------------------
+
+export interface CreateIncidentPayload {
+  location: string
+  lat: number
+  lng: number
+  /** ISO-8601 timestamp string */
+  time: string
+  severity: import('../types/incident').IncidentSeverity
+  aiSummary: string
+  confidence: import('../types/incident').ConfidenceLevel
+  estimatedInjuries?: number
+  weather?: { condition: string; temperature: number; visibility: string }
+  traffic?: string
+  cameraId?: string
+  llmHospital?: string
+  llmPolice?: string
+  llmNajm?: string
+}
+
+/**
+ * Creates a new incident via the create_incident SECURITY DEFINER RPC.
+ * Available to both admin and responder roles.
+ * Auto-generates id / case_id server-side; status is always initialised to 'new'.
+ * The on_incident_inserted trigger fires the incident.created Telegram notification.
+ */
+export const createIncident = async (
+  payload: CreateIncidentPayload,
+): Promise<RawIncidentRow> => {
+  const { data, error } = await supabase.rpc('create_incident', {
+    p_location:            payload.location,
+    p_lat:                 payload.lat,
+    p_lng:                 payload.lng,
+    p_time:                payload.time,
+    p_severity:            payload.severity,
+    p_ai_summary:          payload.aiSummary,
+    p_confidence:          payload.confidence,
+    p_estimated_injuries:  payload.estimatedInjuries ?? null,
+    p_weather:             payload.weather ?? null,
+    p_traffic:             payload.traffic ?? null,
+    p_camera_id:           payload.cameraId ?? null,
+    p_llm_hospital:        payload.llmHospital ?? null,
+    p_llm_police:          payload.llmPolice ?? null,
+    p_llm_najm:            payload.llmNajm ?? null,
+  })
+
+  if (error) throw parseRpcError(error)
+  return data as RawIncidentRow
+}
+
+// ---------------------------------------------------------------------------
 //  Assignment engine + Telegram notifier
 // ---------------------------------------------------------------------------
 
