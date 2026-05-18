@@ -24,7 +24,9 @@ export interface AuditLogEntry {
   id: string
   timestamp: Date
   user: string
-  ipAddress: string
+  ipAddress: string | null
   action: string
+  entityType: string | null
+  entityId: string | null
 }
 

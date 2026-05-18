@@ -73,8 +73,10 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       id: entry.id,
       timestamp: new Date(entry.timestamp),
       user: entry.user_name,
-      ipAddress: entry.ip_address,
+      ipAddress: entry.ip_address ?? null,
       action: entry.action,
+      entityType: entry.entity_type ?? null,
+      entityId: entry.entity_id ?? null,
     }))
 
     setAuditLog(mapped)
@@ -89,12 +91,30 @@ export const SystemProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     init()
 
-    const interval = setInterval(async () => {
+    // Refresh cameras + health every 60 s; audit log every 30 s so new entries
+    // are visible reasonably quickly without a manual page reload.
+    const cameraInterval = setInterval(async () => {
       await refreshCameras()
       refreshSystemHealth()
     }, 60000)
 
-    return () => clearInterval(interval)
+    const auditInterval = setInterval(() => {
+      refreshAuditLog()
+    }, 30000)
+
+    // Real-time subscription: refresh audit log whenever a row is inserted.
+    const channel = supabase
+      .channel('audit-logs-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs' }, () => {
+        refreshAuditLog()
+      })
+      .subscribe()
+
+    return () => {
+      clearInterval(cameraInterval)
+      clearInterval(auditInterval)
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   // Re-compute system health whenever cameras change
